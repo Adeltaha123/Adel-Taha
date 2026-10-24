@@ -414,7 +414,7 @@ const IDB = {
   del(k){ return this.tx("readwrite",st=>st.delete(k)); }
 };
 /* settings kept outside the synced items so keys never land in a backup by accident */
-const CFG = { provider:"claude", claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", openaiModel:"gpt-6.1-sol", engine:"phone", speechLang:"ar-EG" };
+const CFG = { taskLang:"auto", provider:"claude", claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", openaiModel:"gpt-6.1-sol", engine:"phone", speechLang:"ar-EG" };
 try { Object.assign(CFG, JSON.parse(localStorage.getItem("mk_cfg")||"{}")); } catch(e){}
 if (!CFG.engineV){ if (CFG.openaiKey) CFG.engine="whisper"; CFG.engineV=2; try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} }
 function saveCfg(){ try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} AI = pickAI(); }
@@ -841,12 +841,45 @@ function viewCapture(){
   }
   return out;
 }
+function taskLangRule(){
+  const keep = 'Keep people, company, product and technical words the CEO said in English in English letters inside the Arabic text (e.g. "Application", "Foodics", "CRM"), and write common words in Arabic (e.g. "Meeting" → "اجتماع", "follow up" → "متابعة").';
+  const tl = CFG.taskLang || "auto";
+  if (tl==="ar") return 'Write every task title, checklist step, note and summary in Arabic script, even if the CEO spoke English or Franco. Convert Franco into proper Arabic. '+keep;
+  if (tl==="en") return 'Write every task title, checklist step, note and summary in clear English, even if the CEO spoke Arabic or Franco.';
+  return 'Write each task title, checklist step and note in the language the CEO used for that item: if they spoke Arabic, even mixed with some English words, write it in Arabic script; if they spoke English, write English; write Franco as proper Arabic script. '+keep+' Write the summary in the main language of the message. Examples: "Meeting مع محمد حسن الساعة ١٢" → title "اجتماع مع محمد حسن", time "12:00"; "عايز اتابع مع خلود الحاجات المفتوحة الخاصة بالـ Application" → title "متابعة مع خلود في النقاط المفتوحة الخاصة بالـ Application"; "call Rafik at National Bank at 9" → title "Call Rafik at National Bank", time "09:00".';
+}
+/* Rewrites open tasks into one language and moves any clock time out of the title. */
+async function rewriteTasks(target, btn){
+  if (!AI) return toast(t("aiOff"));
+  const list = all("task").filter(x=>!x.done); if (!list.length) return;
+  const ar = lang==="ar"; let done=0;
+  if (btn){ btn.disabled=true; }
+  try{
+    for (let i=0;i<list.length;i+=25){
+      const chunk = list.slice(i,i+25).map(x=>({id:x.id,title:x.title,time:x.time||null,checklist:(x.items||[]).map(it=>it.t)}));
+      if (btn) btn.textContent = (ar?"جاري التحويل… ":"Rewriting… ")+done+"/"+list.length;
+      const res = await AI.json(`Rewrite these to-do items for a CEO in ${target==="ar"?"Arabic script. Keep people, company, product and technical names in English letters where they were English (e.g. \"Foodics\", \"Application\"); write common words in Arabic (\"Follow up with\" → \"متابعة مع\", \"Meeting with\" → \"اجتماع مع\", \"Call\" → \"اتصال بـ\", \"Review\" → \"مراجعة\").":"clear, short English."}
+If a title contains a clock time (e.g. "at 09:00", "الساعة ١٠"), remove it from the title and return it as "time" in 24-hour HH:MM; otherwise return the existing time.
+Keep the meaning exactly; do not add or drop items.
+Items: ${JSON.stringify(chunk)}
+Reply with only JSON: {"items":[{"id":"same id","title":"...","time":"HH:MM or null","checklist":["same number of steps, rewritten"]}]}`);
+      for (const it of (res.items||[])){
+        const x=S.items.get(it.id); if(!x||!it.title) continue;
+        const steps=Array.isArray(it.checklist)?it.checklist:[];
+        await patch(x.id,{title:String(it.title).trim(), time:normTime(it.time)||x.time||null, items:(x.items||[]).map((st,k)=>({...st,t:steps[k]?String(steps[k]):st.t}))});
+        done++;
+      }
+    }
+    toast((ar?"تم تحويل ":"Rewrote ")+done+(ar?" مهمة":" tasks"));
+  }catch(e){ toast(aiErrMsg(e)); }
+  if (btn){ btn.disabled=false; refreshSheet(); }
+}
 async function organize(text, opt={}){
   const ask = p => AI.json(p).catch(e=>{ const other = AI===OAIX ? (CFG.claudeKey?AIX:null) : (CFG.openaiKey?OAIX:null); if (isBilling(e) && other) return other.json(p); throw e; });
   const res = await ask(`You are the executive assistant of a CEO in Egypt. ${ctxLine()}
 ${LANG_RULE}
 ${opt.import?`The text below is copied from another assistant or chat (for example a Meta AI conversation on WhatsApp, possibly a WhatsApp chat export with dates and sender names), or a list the CEO kept. Extract every meeting, appointment, schedule, task and reminder that is still upcoming or open. Skip anything clearly in the past (before ${TODAY()}) or marked done, skip the assistant's own small talk, and merge duplicates that appear more than once. For a meeting or reminder, put its clock time in "time" (e.g. title "Meeting with Mohamed Ragab", time "10:00"). For a recurring item (e.g. every Sunday), title it with the repetition and set the due date to the next occurrence. Keep useful background facts as notes.
-`:""}Organize the message below. Be brief: short task titles, no filler. Write every task title, checklist step, note and summary in ${lang==="ar"?"Arabic script (convert Franco into proper Arabic; keep English names and brand terms as they are)":"clear English"}.
+`:""}Organize the message below. Be brief: short task titles, no filler. ${taskLangRule()}
 Prioritize each task with the Eisenhower matrix: 1 = urgent and important (deadlines today or tomorrow, money, legal, clients, people crises), 2 = important not urgent (strategy, hiring, planning, health, relationships), 3 = urgent not important (routine requests someone else can handle; name a delegate if the message mentions one), 4 = neither.
 Resolve relative dates to YYYY-MM-DD. Split a task with several steps into a checklist. Merge repeated mentions of the same thing into one task. Ignore greetings, filler words and false starts.
 Message:
@@ -1094,7 +1127,13 @@ function openSettings(){
     return [
       h("div",{class:"row",style:"justify-content:space-between"},h("h2",null,t("settings")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
       h("div",{class:"section"},h("span",{class:"eyebrow"},t("language")),
-        h("div",{class:"seg"},[["en","English"],["ar","العربية"]].map(([k,l])=>h("button",{type:"button","aria-pressed":lang===k?"true":"false",onclick:()=>{lang=k;try{localStorage.setItem("mk_lang",k);}catch(e){} applyLang(); render(); refreshSheet();}},l)))),
+        h("span",{class:"small"},lang==="ar"?"لغة التطبيق":"App language"),
+        h("div",{class:"seg"},[["en","English"],["ar","العربية"]].map(([k,l])=>h("button",{type:"button","aria-pressed":lang===k?"true":"false",onclick:()=>{lang=k;try{localStorage.setItem("mk_lang",k);}catch(e){} applyLang(); render(); refreshSheet();}},l))),
+        h("span",{class:"small"},lang==="ar"?"لغة كتابة المهام":"Write my tasks in"),
+        h("div",{class:"seg"},[["auto",lang==="ar"?"نفس لغة كلامي":"Same as I speak"],["ar","العربية"],["en","English"]].map(([k,l])=>h("button",{type:"button","aria-pressed":(CFG.taskLang||"auto")===k?"true":"false",onclick:()=>{CFG.taskLang=k;saveCfg();refreshSheet();toast(t("saved"));}},l))),
+        h("div",{class:"row"},
+          h("button",{type:"button",class:"btn grow",disabled:!AI,onclick:e=>rewriteTasks("ar",e.currentTarget)},lang==="ar"?"حوّل مهامي الحالية للعربية":"Rewrite my tasks in Arabic"),
+          h("button",{type:"button",class:"btn grow",disabled:!AI,onclick:e=>rewriteTasks("en",e.currentTarget)},lang==="ar"?"حوّلها للإنجليزية":"Rewrite in English"))),
       h("div",{class:"section"},h("span",{class:"eyebrow"},"AI"),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},lang==="ar"?"من يحلل ملاحظاتك":"Who analyzes your notes"),pv),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("claudeKey")),ck,h("span",{class:"small muted"},t("claudeKeyHint"))),
