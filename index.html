@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maktab Assistant</title>
+<meta name="theme-color" content="#14201C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maktab">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-column phone app, sticky header, fixed bottom nav with a centered capture button; desktop centers a 560px column. */
+:root{
+  --bg:#F2F4F1; --surface:#FFFFFF; --sunk:#E8ECE8; --ink:#14201C; --muted:#5B6964; --line:#D8DEDA;
+  --accent:#0E6B5C; --accent-soft:#D8EDE7; --on-accent:#FFFFFF; --gold:#A87A22; --gold-soft:#F4E9D2;
+  --q1:#C0402C; --q2:#0E6B5C; --q3:#A87A22; --q4:#7A8681; --danger:#B3261E; --shadow:0 8px 28px rgba(20,32,28,.12);
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Readex Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1311; --surface:#141E1B; --sunk:#1B2723; --ink:#E6EDE9; --muted:#93A39D; --line:#26342F;
+  --accent:#43B9A2; --accent-soft:#16352E; --on-accent:#06120F; --gold:#E2B45C; --gold-soft:#33291A;
+  --q1:#F2806A; --q2:#43B9A2; --q3:#E2B45C; --q4:#7F8E88; --danger:#F2806A; --shadow:0 8px 28px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1311; --surface:#141E1B; --sunk:#1B2723; --ink:#E6EDE9; --muted:#93A39D; --line:#26342F;
+  --accent:#43B9A2; --accent-soft:#16352E; --on-accent:#06120F; --gold:#E2B45C; --gold-soft:#33291A;
+  --q1:#F2806A; --q2:#43B9A2; --q3:#E2B45C; --q4:#7F8E88; --danger:#F2806A; --shadow:0 8px 28px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:560px;margin:0 auto;min-height:100%;padding-top:env(safe-area-inset-top,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(96px + env(safe-area-inset-bottom,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:14px 10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.brand .mark{width:28px;height:28px;border-radius:8px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-size:15px}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.iconbtn svg{width:20px;height:20px}
+.pill-btn{height:40px;padding-inline:14px;border-radius:12px;border:0;background:var(--ink);color:var(--bg);font-weight:600;display:flex;align-items:center;gap:6px}
+.pill-btn svg{width:18px;height:18px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+h1{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+h2{font-size:17px;font-weight:600}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.section{display:flex;flex-direction:column;gap:10px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.banner{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--ink)}
+.btn{height:44px;padding-inline:16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn svg{width:18px;height:18px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+input.field,textarea.field,select.field{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;outline:none}
+input.field:focus,textarea.field:focus{border-color:var(--accent)}
+textarea.field{resize:vertical;min-height:120px;line-height:1.6}
+
+/* Top 3 */
+.top3{background:var(--ink);color:var(--bg);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.top3 .eyebrow{color:color-mix(in srgb,var(--bg) 70%,transparent)}
+.top3 .slot{display:flex;align-items:center;gap:12px;padding-block:6px;border-top:1px solid color-mix(in srgb,var(--bg) 16%,transparent)}
+.top3 .slot:first-of-type{border-top:0}
+.top3 .num{font-family:var(--f-mono);font-size:13px;color:var(--gold);width:18px}
+.top3 .slot .t{flex:1;min-width:0;font-weight:500}
+.top3 .empty{color:color-mix(in srgb,var(--bg) 60%,transparent);font-size:14px}
+.top3 .check{border-color:color-mix(in srgb,var(--bg) 50%,transparent)}
+
+/* tasks */
+.task{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;border-inline-start:4px solid var(--qc,var(--line))}
+.task .body{flex:1;min-width:0;cursor:pointer}
+.task .title{font-weight:500;overflow-wrap:anywhere}
+.task.done .title{text-decoration:line-through;color:var(--muted)}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip.late{background:color-mix(in srgb,var(--q1) 16%,transparent);color:var(--q1)}
+.chip.today{background:var(--gold-soft);color:var(--gold)}
+.chip.star{background:var(--gold-soft);color:var(--gold)}
+.check{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--muted);background:transparent;display:grid;place-items:center;padding:0;margin-top:1px}
+.check svg{width:14px;height:14px;opacity:0}
+.check.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.check.on svg{opacity:1}
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quad{border-radius:14px;padding:10px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px;min-width:0;border-top:4px solid var(--qc)}
+.quad h3{font-size:14px;display:flex;justify-content:space-between;gap:6px}
+.quad .hint{font-size:11px;color:var(--muted);line-height:1.35}
+.mini{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.35;cursor:pointer}
+.mini .check{width:18px;height:18px;border-radius:5px}
+.mini .check svg{width:11px;height:11px}
+.mini span{overflow-wrap:anywhere;min-width:0}
+.mini.done span{text-decoration:line-through;color:var(--muted)}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;height:34px;font-weight:600;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.qpick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qpick button{text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;font-size:13px;border-inline-start:4px solid var(--qc)}
+.qpick button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--qc)}
+.qpick b{display:block;font-size:14px}
+
+/* capture */
+.capture-box{position:relative}
+.voice-hint{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--accent-soft);font-size:13px}
+.voice-hint svg{flex:none;width:22px;height:22px;color:var(--accent)}
+.result{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);border-inline-start:4px solid var(--qc,var(--line))}
+.result .why{font-size:12px;color:var(--muted)}
+.lang-tag{font-family:var(--f-mono);font-size:11px;padding:2px 6px;border-radius:6px;background:var(--sunk);color:var(--muted)}
+
+/* notes */
+.note{white-space:pre-wrap;overflow-wrap:anywhere}
+.note-meta{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+
+/* habits */
+.habit{display:flex;flex-direction:column;gap:10px}
+.habit .hrow{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:none;border:0;padding:0}
+.dot{width:32px;height:32px;border-radius:10px;border:1.5px solid var(--line);display:grid;place-items:center;background:var(--surface)}
+.dot.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dot.today{border-color:var(--gold)}
+.dot svg{width:14px;height:14px}
+.streak{font-family:var(--f-mono);font-size:12px;color:var(--gold)}
+
+/* chat */
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-end-end-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-end-start-radius:4px}
+.msg.tool{align-self:flex-start;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:4px 10px}
+.composer{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:flex-end;background:var(--bg);padding-block:8px}
+.composer textarea{min-height:46px;max-height:140px}
+.suggest{display:flex;gap:6px;flex-wrap:wrap}
+.suggest button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px}
+
+/* nav */
+nav.tabs{position:fixed;inset:auto 0 0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.tabs .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:end;height:68px}
+nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding-block:8px;font-weight:500}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+nav.tabs .fab{position:relative;top:-14px}
+nav.tabs .fab .disc{width:58px;height:58px;border-radius:20px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:var(--shadow)}
+nav.tabs .fab .disc svg{width:26px;height:26px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(6,12,10,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--line);align-self:center}
+.cl-item{display:flex;gap:10px;align-items:center;padding-block:6px;border-bottom:1px solid var(--line)}
+.cl-item span{flex:1;min-width:0;overflow-wrap:anywhere}
+.cl-item.done span{text-decoration:line-through;color:var(--muted)}
+.x{border:0;background:none;color:var(--muted);width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+.x svg{width:16px;height:16px}
+.progress{height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent)}
+
+/* lock */
+.lock{position:fixed;inset:0;z-index:60;background:var(--ink);color:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));text-align:center}
+.lock h1{color:var(--bg)}
+.lock .sub{color:color-mix(in srgb,var(--bg) 70%,transparent);font-size:14px;max-width:32ch}
+.pins{display:flex;gap:12px;justify-content:center}
+.pins i{width:14px;height:14px;border-radius:50%;border:2px solid color-mix(in srgb,var(--bg) 60%,transparent)}
+.pins i.on{background:var(--gold);border-color:var(--gold)}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px;justify-content:center;direction:ltr}
+.pad button{width:72px;height:72px;border-radius:50%;border:1px solid color-mix(in srgb,var(--bg) 22%,transparent);background:color-mix(in srgb,var(--bg) 6%,transparent);color:var(--bg);font-family:var(--f-display);font-size:24px}
+.pad button.blank{visibility:hidden}
+.pad button svg{width:24px;height:24px}
+.bio-btn{display:flex;align-items:center;gap:10px;border:1px solid var(--gold);color:var(--gold);background:transparent;border-radius:14px;padding:12px 18px;font-weight:600}
+.bio-btn svg{width:26px;height:26px}
+.lock .err{color:var(--gold);min-height:20px;font-size:14px}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:70;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:360px){.matrix{grid-template-columns:1fr}}
+[dir="rtl"] .flip{transform:scaleX(-1)}
+/* voice */
+.mic-hero{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--accent);color:var(--on-accent);border:0;text-align:start;width:100%}
+.mic-hero .disc{flex:none;width:54px;height:54px;border-radius:50%;background:color-mix(in srgb,var(--on-accent) 18%,transparent);display:grid;place-items:center}
+.mic-hero svg{width:26px;height:26px}
+.mic-hero b{display:block;font-family:var(--f-display);font-size:17px}
+.mic-hero span{font-size:13px;opacity:.85}
+.rec-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding-block:8px}
+.rec-btn{width:112px;height:112px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:var(--shadow);position:relative}
+.rec-btn svg{width:44px;height:44px}
+.rec-btn.on{background:var(--q1)}
+.rec-btn.on::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:3px solid var(--q1);opacity:.5;animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{from{transform:scale(.9);opacity:.6}to{transform:scale(1.25);opacity:0}}
+.timer{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums}
+.live{min-height:120px}
+.interim{color:var(--muted)}
+audio{width:100%;height:40px}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><span class="mark">م</span><span>Maktab</span></div>
+    <button class="pill-btn" id="askBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg><span data-t="ask">Ask</span></button>
+    <button class="iconbtn" id="menuBtn" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+  </header>
+  <main id="view" class="stack"></main>
+</div>
+
+<nav class="tabs" aria-label="Main">
+  <div class="inner">
+    <button type="button" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-t="today">Today</span></button>
+    <button type="button" data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span data-t="tasks">Tasks</span></button>
+    <button type="button" id="fabMic" class="fab" aria-label="Voice note"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></span></button>
+    <button type="button" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span data-t="notes">Notes</span></button>
+    <button type="button" data-tab="habits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l4 4L17 6"/><path d="M13 16l1 1 7-7"/></svg><span data-t="habits">Habits</span></button>
+  </div>
+</nav>
+
+<div class="lock" id="lock">
+  <div class="brand" style="flex:none;color:var(--bg)"><span class="mark" style="background:var(--gold);color:var(--ink)">م</span><span>Maktab</span></div>
+  <div class="spinner" style="color:var(--gold)"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- i18n ---------- */
+const T = {
+ en:{ask:"Ask",today:"Today",tasks:"Tasks",notes:"Notes",habits:"Habits",capture:"Capture",
+  goodMorning:"Good morning",goodAfternoon:"Good afternoon",goodEvening:"Good evening",
+  top3:"Today's Top 3",top3Empty:"No priorities set. Star up to three tasks, or let the assistant pick.",
+  planDay:"Plan my day",planning:"Thinking it through…",setTop3:"Set as Top 3",dueSoon:"Due today & overdue",nothingDue:"Nothing due today. Good time for Schedule work.",
+  habitsToday:"Habits today",journalPrompt:"How did today go?",writeJournal:"Write today's entry",
+  matrix:"Matrix",list:"List",addTask:"Add a task… (Arabic, English or Franco)",add:"Add",
+  q1:"Do now",q1h:"Urgent + important",q2:"Schedule",q2h:"Important, not urgent",q3:"Delegate",q3h:"Urgent, not important",q4:"Drop",q4h:"Neither",
+  late:"Late",dueToday:"Today",tomorrow:"Tomorrow",showDone:"Show completed",hideDone:"Hide completed",
+  task:"Task",title:"Title",priority:"Priority",due:"Due date",delegateTo:"Delegate to",checklist:"Checklist",addStep:"Add a step",starTop:"Pin to Top 3",unstar:"Remove from Top 3",del:"Delete",confirmDel:"Tap again to delete",close:"Done",
+  capTitle:"Capture",capSub:"Type or dictate a voice note in Arabic, English or Franco. The assistant turns it into tasks, checklists and notes.",
+  voiceHint:"For a voice note, tap the microphone on your phone keyboard and speak. Both Arabic and English dictation work.",
+  capPh:"e.g. lazem akalem Ahmed bokra 3an el budget, w ab3at el proposal lel bank before Thursday…",
+  analyze:"Analyze & organize",saveNote:"Save as note",analyzing:"Organizing…",found:"Found",addSel:"Add selected",added:"Added",
+  detected:"Detected",noteKind:"Note",journalKind:"Journal",summary:"Summary",
+  notesT:"Notes",journal:"Journal",newNote:"New note",save:"Save",entryFor:"Entry for",noNotes:"No notes yet. Capture something, or write one here.",noJournal:"No journal entries yet.",
+  summarize:"Summarize",
+  habitsT:"Habits",addHabit:"New habit, e.g. 30 min walk",streak:"day streak",noHabits:"No habits yet. Add one below.",
+  askT:"Assistant",askSub:"Ask anything about your day. It can add and complete tasks for you.",askPh:"Message…",send:"Send",
+  s1:"What should I focus on first?",s2:"Draft a short email to postpone the board meeting",s3:"eh el7agat el late 3andy?",
+  settings:"Settings",language:"Language",security:"Security",lockNow:"Lock now",changePin:"Change PIN",bio:"Fingerprint / Face unlock",bioOn:"Enabled",bioOff:"Enable",bioNA:"Not available on this device or browser. Your PIN still protects the app.",
+  sample:"Sample data",loadSample:"Load a sample day",clearSample:"Remove sample items",
+  privacy:"Your data is stored in your private space, visible only to your signed-in Claude account. The lock screen adds a second gate on this device.",
+  localMode:"Not signed in: data is kept only in this browser.",
+  setupT:"Secure your assistant",setupSub:"Choose a 4-digit PIN. You can also turn on fingerprint or Face unlock if your device allows it here.",
+  confirmPin:"Enter the PIN again",pinMismatch:"PINs didn't match. Try again.",enterPin:"Enter your PIN",wrongPin:"Wrong PIN",
+  unlockBio:"Unlock with fingerprint",useBio:"Use fingerprint / Face",aiOff:"The assistant isn't available in this view. You can still add and manage everything by hand.",
+  aiErr:"The assistant couldn't answer. Try again in a moment.",saved:"Saved",example:"Example",done:"Completed",
+  greetName:"",of:"of",
+  aiOff:"Add your Claude API key in Settings to turn on the assistant. Everything else works without it.",openSettings:"Open Settings",
+  voice:"Voice",voiceTitle:"Voice note",tapRec:"Tap to record a voice note",tapRecSub:"Speak in Arabic or English. Maktab writes it down and organizes it.",
+  tapStart:"Tap to start",listening:"Listening… tap to stop",transcribing:"Writing it down…",transcript:"Transcript",editHint:"You can fix any word before organizing.",
+  arabic:"Arabic (Egypt)",english:"English",typeInstead:"Type instead",engine:"Voice engine",engPhone:"Phone speech (free)",engWhisper:"Whisper (best for long or mixed notes)",
+  noSR:"This browser can't turn speech into text. Use Chrome on Android or Safari on iPhone, or add an OpenAI key in Settings for Whisper.",
+  micDenied:"Microphone access was blocked. Allow the microphone for this site in your browser settings, then try again.",
+  noVoice:"No voice notes yet. Tap the mic button below to record one.",play:"Play",saveVoice:"Save voice note",
+  claudeKey:"Claude API key",claudeKeyHint:"From console.anthropic.com. Stored only on this phone.",openaiKey:"OpenAI API key (optional, for Whisper)",model:"Model",speechLang:"Default voice language",
+  backup:"Backup",exportB:"Export backup",importB:"Import backup",imported:"Backup restored",keysSaved:"Keys saved",
+  privacy:"Everything is stored only on this device. Export a backup regularly. The lock screen protects the app if someone picks up your phone."},
+ ar:{ask:"اسأل",today:"اليوم",tasks:"المهام",notes:"ملاحظات",habits:"العادات",capture:"تسجيل",
+  goodMorning:"صباح الخير",goodAfternoon:"مساء الخير",goodEvening:"مساء الخير",
+  top3:"أهم ٣ مهام اليوم",top3Empty:"لا توجد أولويات بعد. ثبّت حتى ٣ مهام، أو دع المساعد يختار.",
+  planDay:"خطط يومي",planning:"جاري التفكير…",setTop3:"اعتمدها كأهم ٣",dueSoon:"مستحق اليوم ومتأخر",nothingDue:"لا شيء مستحق اليوم. وقت مناسب للأعمال المهمة.",
+  habitsToday:"عادات اليوم",journalPrompt:"كيف كان يومك؟",writeJournal:"اكتب يومية اليوم",
+  matrix:"المصفوفة",list:"القائمة",addTask:"أضف مهمة… (عربي أو إنجليزي أو فرانكو)",add:"إضافة",
+  q1:"نفّذ الآن",q1h:"عاجل ومهم",q2:"جدول",q2h:"مهم وغير عاجل",q3:"فوّض",q3h:"عاجل وغير مهم",q4:"استبعد",q4h:"لا عاجل ولا مهم",
+  late:"متأخر",dueToday:"اليوم",tomorrow:"غداً",showDone:"إظهار المكتمل",hideDone:"إخفاء المكتمل",
+  task:"مهمة",title:"العنوان",priority:"الأولوية",due:"تاريخ الاستحقاق",delegateTo:"تفويض إلى",checklist:"قائمة التحقق",addStep:"أضف خطوة",starTop:"ثبّت في أهم ٣",unstar:"إزالة من أهم ٣",del:"حذف",confirmDel:"اضغط مرة أخرى للحذف",close:"تم",
+  capTitle:"تسجيل",capSub:"اكتب أو أملِ ملاحظة صوتية بالعربي أو الإنجليزي أو الفرانكو، وسيحوّلها المساعد إلى مهام وقوائم وملاحظات.",
+  voiceHint:"للملاحظة الصوتية، اضغط على الميكروفون في لوحة مفاتيح هاتفك وتحدث. الإملاء بالعربية والإنجليزية يعمل.",
+  capPh:"مثال: لازم أكلم أحمد بكرة عن الميزانية، وأبعت العرض للبنك قبل الخميس…",
+  analyze:"حلّل ونظّم",saveNote:"احفظ كملاحظة",analyzing:"جاري التنظيم…",found:"تم العثور على",addSel:"أضف المحدد",added:"تمت الإضافة",
+  detected:"اللغة",noteKind:"ملاحظة",journalKind:"يومية",summary:"الملخص",
+  notesT:"ملاحظات",journal:"اليوميات",newNote:"ملاحظة جديدة",save:"حفظ",entryFor:"يومية",noNotes:"لا توجد ملاحظات بعد.",noJournal:"لا توجد يوميات بعد.",
+  summarize:"لخّص",
+  habitsT:"العادات",addHabit:"عادة جديدة، مثل مشي ٣٠ دقيقة",streak:"يوم متتالي",noHabits:"لا توجد عادات بعد. أضف واحدة بالأسفل.",
+  askT:"المساعد",askSub:"اسأل عن يومك. يمكنه إضافة المهام وإنجازها لك.",askPh:"رسالة…",send:"إرسال",
+  s1:"بماذا أبدأ أولاً؟",s2:"اكتب بريداً قصيراً لتأجيل اجتماع مجلس الإدارة",s3:"eh el7agat el late 3andy?",
+  settings:"الإعدادات",language:"اللغة",security:"الأمان",lockNow:"اقفل الآن",changePin:"تغيير الرقم السري",bio:"فتح بالبصمة / الوجه",bioOn:"مفعّل",bioOff:"تفعيل",bioNA:"غير متاح على هذا الجهاز أو المتصفح. الرقم السري ما زال يحمي التطبيق.",
+  sample:"بيانات تجريبية",loadSample:"حمّل يوماً تجريبياً",clearSample:"احذف العناصر التجريبية",
+  privacy:"بياناتك محفوظة في مساحتك الخاصة، ولا يراها إلا حسابك في Claude. شاشة القفل حماية إضافية على هذا الجهاز.",
+  localMode:"لم تسجل الدخول: البيانات محفوظة في هذا المتصفح فقط.",
+  setupT:"احمِ مساعدك",setupSub:"اختر رقماً سرياً من ٤ أرقام. ويمكنك تفعيل البصمة أو الوجه إن سمح جهازك بذلك هنا.",
+  confirmPin:"أدخل الرقم مرة أخرى",pinMismatch:"الرقمان غير متطابقين. حاول مجدداً.",enterPin:"أدخل الرقم السري",wrongPin:"رقم خاطئ",
+  unlockBio:"افتح بالبصمة",useBio:"استخدم البصمة / الوجه",aiOff:"المساعد غير متاح في هذا العرض. يمكنك إدارة كل شيء يدوياً.",
+  aiErr:"تعذّر الرد. حاول بعد قليل.",saved:"تم الحفظ",example:"مثال",done:"مكتمل",greetName:"",of:"من",
+  aiOff:"أضف مفتاح Claude API في الإعدادات لتشغيل المساعد. باقي التطبيق يعمل بدونه.",openSettings:"افتح الإعدادات",
+  voice:"صوتيات",voiceTitle:"ملاحظة صوتية",tapRec:"اضغط لتسجيل ملاحظة صوتية",tapRecSub:"تحدث بالعربي أو الإنجليزي، ومكتب يكتبها وينظمها.",
+  tapStart:"اضغط للبدء",listening:"جاري الاستماع… اضغط للإيقاف",transcribing:"جاري الكتابة…",transcript:"النص",editHint:"يمكنك تصحيح أي كلمة قبل التنظيم.",
+  arabic:"العربية (مصر)",english:"English",typeInstead:"اكتب بدلاً من ذلك",engine:"محرك الصوت",engPhone:"كلام الهاتف (مجاني)",engWhisper:"Whisper (الأفضل للملاحظات الطويلة أو المختلطة)",
+  noSR:"هذا المتصفح لا يحول الكلام إلى نص. استخدم Chrome على أندرويد أو Safari على آيفون، أو أضف مفتاح OpenAI لاستخدام Whisper.",
+  micDenied:"تم منع الميكروفون. اسمح بالميكروفون لهذا الموقع من إعدادات المتصفح ثم حاول مجدداً.",
+  noVoice:"لا توجد ملاحظات صوتية بعد. اضغط زر الميكروفون بالأسفل.",play:"تشغيل",saveVoice:"احفظ الملاحظة الصوتية",
+  claudeKey:"مفتاح Claude API",claudeKeyHint:"من console.anthropic.com. يُحفظ على هذا الهاتف فقط.",openaiKey:"مفتاح OpenAI (اختياري، لـ Whisper)",model:"النموذج",speechLang:"لغة الصوت الافتراضية",
+  backup:"نسخة احتياطية",exportB:"تصدير نسخة احتياطية",importB:"استيراد نسخة احتياطية",imported:"تمت الاستعادة",keysSaved:"تم حفظ المفاتيح",
+  privacy:"كل البيانات محفوظة على هذا الجهاز فقط. صدّر نسخة احتياطية بانتظام. شاشة القفل تحمي التطبيق إذا أمسك أحد بهاتفك."}
+};
+let lang = "en";
+try { lang = localStorage.getItem("mk_lang") || ((navigator.language||"").startsWith("ar") ? "ar" : "en"); } catch(e){}
+const t = k => (T[lang] && T[lang][k]) ?? T.en[k] ?? k;
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => n.textContent = t(n.dataset.t));
+}
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+function h(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)){
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "html") n.innerHTML = v;
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return n;
+}
+const ICON = {
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>',
+  finger:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 11v3a7 7 0 01-1.5 4.3"/><path d="M8.5 7.5A5 5 0 0117 11v1.5a12 12 0 01-.8 4.3"/><path d="M5.6 9.6A7 7 0 0119 11v1"/><path d="M8 11a4 4 0 010-.5M8 13.5a10 10 0 01-1.6 4.8"/><path d="M14.5 13.5a14 14 0 01-1.2 5.5"/><path d="M4 6.5A9.5 9.5 0 0121 9"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flip"><path d="M15 6l-6 6 6 6"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flip"><path d="M4 12l16-8-6 16-2-7z"/></svg>'
+};
+const svg = k => h("span",{html:ICON[k],style:"display:contents"});
+function dkey(d=new Date()){ const z=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate()); }
+function addDays(k,n){ const [y,m,d]=k.split("-").map(Number); return dkey(new Date(y,m-1,d+n)); }
+const TODAY = () => dkey();
+function fmtDate(k, opts={day:"numeric",month:"short"}){ if(!k) return ""; const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString(lang==="ar"?"ar-EG":"en-GB",opts); }
+const uid = p => p + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+let toastTimer;
+function toast(msg){ document.querySelectorAll(".toast").forEach(n=>n.remove()); const n=h("div",{class:"toast",role:"status"},msg); document.body.append(n); clearTimeout(toastTimer); toastTimer=setTimeout(()=>n.remove(),2600); }
+async function sha(s){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+/* ---------- store (this device) ---------- */
+const S = { uid:"local", items:new Map(), ready:false };
+try { let salt=localStorage.getItem("mk_salt"); if(!salt){ salt=uid("dev"); localStorage.setItem("mk_salt",salt); } S.uid=salt; } catch(e){}
+function all(kind){ return [...S.items.values()].filter(x=>x.kind===kind); }
+function settings(){ return S.items.get("settings") || {kind:"settings"}; }
+function persist(){ try{ localStorage.setItem("mk_items", JSON.stringify([...S.items.entries()])); }catch(e){ toast("Storage is full. Export a backup and delete old voice notes."); } }
+async function put(id, data){ data = {...data, id}; S.items.set(id, data); persist(); render(); }
+async function patch(id, fields){ const cur=S.items.get(id); if(!cur) return; return put(id,{...cur,...fields,updated:Date.now()}); }
+async function remove(id){ const x=S.items.get(id); S.items.delete(id); persist(); render(); if(x && x.audioId) IDB.del(x.audioId).catch(()=>{}); }
+function loadLocal(){ try{ const raw=localStorage.getItem("mk_items"); if(raw) S.items=new Map(JSON.parse(raw)); }catch(e){} }
+const IDB = {
+  db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("maktab",1); r.onupgradeneeded=()=>r.result.createObjectStore("audio"); r.onsuccess=()=>{this.db=r.result;res(r.result);}; r.onerror=()=>rej(r.error); }); },
+  async tx(mode,fn){ const d=await this.open(); return new Promise((res,rej)=>{ const tx=d.transaction("audio",mode); const req=fn(tx.objectStore("audio")); tx.oncomplete=()=>res(req&&req.result); tx.onerror=()=>rej(tx.error); }); },
+  put(k,v){ return this.tx("readwrite",st=>st.put(v,k)); },
+  get(k){ return this.tx("readonly",st=>st.get(k)); },
+  del(k){ return this.tx("readwrite",st=>st.delete(k)); }
+};
+/* settings kept outside the synced items so keys never land in a backup by accident */
+const CFG = { claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", engine:"phone", speechLang:"ar-EG" };
+try { Object.assign(CFG, JSON.parse(localStorage.getItem("mk_cfg")||"{}")); } catch(e){}
+function saveCfg(){ try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} AI = CFG.claudeKey ? AIX : null; }
+
+/* ---------- lock ---------- */
+const LOCK = { unlocked:false, hiddenAt:0 };
+let BIO_OK=false;
+function bioSupported(){ return BIO_OK; }
+try{ if (window.PublicKeyCredential && window.isSecureContext && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(v=>{ BIO_OK=!!v; if(BIO_OK && !$("#lock").hidden && settings().bioId && !LOCK.unlocked && !$(".bio-btn")) showLock("unlock"); }).catch(()=>{}); }catch(e){}
+async function bioCreate(){
+  const cred = await navigator.credentials.create({publicKey:{
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rp:{name:"Maktab"}, user:{id:new TextEncoder().encode(S.uid.slice(0,60)), name:"owner", displayName:"Maktab owner"},
+    pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+    authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"}, timeout:60000 }});
+  return b64(cred.rawId);
+}
+async function bioVerify(id){
+  const a = await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:unb64(id)}],userVerification:"required",timeout:60000}});
+  return !!a;
+}
+function showLock(mode){
+  const L = $("#lock"); L.hidden = false; L.replaceChildren();
+  let entered = "", first = null;
+  const st = settings();
+  const brand = h("div",{class:"brand",style:"flex:none;color:var(--bg)"},h("span",{class:"mark",style:"background:var(--gold);color:var(--ink)"},"م"),h("span",null,"Maktab"));
+  const title = h("h1",null, mode==="setup" ? t("setupT") : t("enterPin"));
+  const sub = h("p",{class:"sub"}, mode==="setup" ? t("setupSub") : "");
+  const dots = h("div",{class:"pins"}, [0,1,2,3].map(()=>h("i")));
+  const err = h("div",{class:"err",role:"alert"});
+  const paint = () => [...dots.children].forEach((d,i)=>d.classList.toggle("on", i<entered.length));
+  const fail = msg => { err.textContent = msg; dots.classList.remove("shake"); void dots.offsetWidth; dots.classList.add("shake"); entered=""; paint(); };
+  async function complete(){
+    if (mode === "setup"){
+      if (first == null){ first = entered; entered=""; paint(); title.textContent = t("confirmPin"); err.textContent=""; return; }
+      if (first !== entered){ first=null; title.textContent=t("setupT"); return fail(t("pinMismatch")); }
+      await put("settings",{...settings(),kind:"settings",pinHash:await sha(S.uid+":"+entered),lang});
+      if (bioSupported() && !settings().bioId){ try{ const id=await bioCreate(); await put("settings",{...settings(),bioId:id}); toast(t("bioOn")); }catch(e){} }
+      unlock(); return;
+    }
+    if (await sha(S.uid+":"+entered) === st.pinHash) unlock(); else fail(t("wrongPin"));
+  }
+  const press = d => { if (entered.length>=4) return; entered += d; paint(); if (entered.length===4) setTimeout(complete,120); };
+  const pad = h("div",{class:"pad"},
+    ["1","2","3","4","5","6","7","8","9"].map(d=>h("button",{type:"button",onclick:()=>press(d)},d)),
+    h("button",{type:"button",class:"blank",tabindex:"-1","aria-hidden":"true"}),
+    h("button",{type:"button",onclick:()=>press("0")},"0"),
+    h("button",{type:"button","aria-label":"Delete",onclick:()=>{entered=entered.slice(0,-1);paint();}},svg("back")));
+  L.append(brand,title,sub,dots,err,pad);
+  if (mode!=="setup" && st.bioId && bioSupported()){
+    const b = h("button",{type:"button",class:"bio-btn",onclick:async()=>{ try{ if(await bioVerify(st.bioId)) unlock(); }catch(e){ err.textContent=t("bioNA"); } }},svg("finger"),t("unlockBio"));
+    L.append(b);
+    setTimeout(async()=>{ try{ if(!LOCK.unlocked && await bioVerify(st.bioId)) unlock(); }catch(e){} },350);
+  }
+  L.onkeydown = e => { if (/^\d$/.test(e.key)) press(e.key); if (e.key==="Backspace"){entered=entered.slice(0,-1);paint();} };
+  L.tabIndex = -1; L.focus();
+}
+function unlock(){ LOCK.unlocked = true; $("#lock").hidden = true; try{ sessionStorage.setItem("mk_unlock", String(Date.now())); }catch(e){} render(); }
+function lockNow(){ LOCK.unlocked=false; try{ sessionStorage.removeItem("mk_unlock"); }catch(e){} closeSheet(); showLock("unlock"); }
+document.addEventListener("visibilitychange",()=>{
+  if (document.hidden) LOCK.hiddenAt = Date.now();
+  else if (LOCK.unlocked && LOCK.hiddenAt && Date.now()-LOCK.hiddenAt > 3*60*1000) lockNow();
+});
+
+/* ---------- AI (Claude API, called directly from this device) ---------- */
+async function claudeCall(body){
+  const r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":CFG.claudeKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:CFG.model||"claude-sonnet-5-5",max_tokens:2500,...body})});
+  let j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw {code:r.status===401?"bad_key":"api",message:(j&&j.error&&j.error.message)||("HTTP "+r.status)};
+  return j;
+}
+const textOf = j => (j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+const AIX = {
+  async json(prompt){
+    const txt = textOf(await claudeCall({messages:[{role:"user",content:prompt}]}));
+    const m = txt.match(/[\[{][\s\S]*[\]}]/);
+    try { return JSON.parse(m?m[0]:txt); } catch(e){ throw {code:"invalid_json",message:"Unreadable answer"}; }
+  },
+  async chat(system, messages, tools){
+    const defs = tools.map(x=>({name:x.name,description:x.description,input_schema:x.inputSchema}));
+    const msgs = messages.slice();
+    for (let round=0; round<6; round++){
+      const j = await claudeCall({system,messages:msgs,tools:defs});
+      if (j.stop_reason !== "tool_use") return textOf(j);
+      msgs.push({role:"assistant",content:j.content});
+      const results=[];
+      for (const c of j.content.filter(c=>c.type==="tool_use")){
+        const tool=tools.find(x=>x.name===c.name);
+        try { results.push({type:"tool_result",tool_use_id:c.id,content:JSON.stringify(await tool.execute(c.input||{}))}); }
+        catch(e){ results.push({type:"tool_result",tool_use_id:c.id,content:String(e.message||e),is_error:true}); }
+      }
+      msgs.push({role:"user",content:results});
+    }
+    return "";
+  }
+};
+let AI = CFG.claudeKey ? AIX : null;
+const aiErrMsg = e => e && e.code==="bad_key" ? (lang==="ar"?"مفتاح Claude API غير صحيح. راجعه في الإعدادات.":"Your Claude API key was rejected. Check it in Settings.") : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
+function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
+const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning.`;
+function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
+
+/* ---------- views ---------- */
+let TAB = "today";
+const UI = { taskMode:"matrix", showDone:false, notesTab:"notes", capText:"", capResult:null, capBusy:false, plan:null, planBusy:false, chat:[], chatBusy:false, editNote:null };
+try { const v = localStorage.getItem("mk_ui"); if (v) Object.assign(UI, {taskMode:"matrix"}, JSON.parse(v)); } catch(e){}
+function rememberUI(){ try{ localStorage.setItem("mk_ui", JSON.stringify({taskMode:UI.taskMode,notesTab:UI.notesTab,capText:UI.capText})); }catch(e){} }
+const Q = [1,2,3,4];
+const qColor = q => `var(--q${q||2})`;
+
+function checkBtn(on, onclick, label){ return h("button",{type:"button",class:"check"+(on?" on":""),"aria-pressed":on?"true":"false","aria-label":label||t("done"),onclick:e=>{e.stopPropagation();onclick();}},svg("check")); }
+function dueChip(due){
+  if (!due) return null; const td=TODAY();
+  if (due < td) return h("span",{class:"chip late"},t("late")+" · "+fmtDate(due));
+  if (due === td) return h("span",{class:"chip today"},t("dueToday"));
+  if (due === addDays(td,1)) return h("span",{class:"chip"},t("tomorrow"));
+  return h("span",{class:"chip"},fmtDate(due));
+}
+function toggleTask(x){ patch(x.id,{done:!x.done,doneAt:!x.done?Date.now():null, top: x.done ? x.top : false}); }
+function taskRow(x){
+  const items = x.items||[]; const dn = items.filter(i=>i.done).length;
+  return h("div",{class:"task"+(x.done?" done":""),style:`--qc:${qColor(x.q)}`},
+    checkBtn(x.done,()=>toggleTask(x)),
+    h("div",{class:"body",onclick:()=>openTask(x.id)},
+      h("div",{class:"title",dir:"auto"},x.title),
+      h("div",{class:"meta"},
+        x.top && !x.done ? h("span",{class:"chip star"},"★ Top 3") : null,
+        h("span",{class:"chip"},t("q"+(x.q||2))),
+        dueChip(!x.done && x.due),
+        items.length ? h("span",{class:"chip"},`☑ ${dn}/${items.length}`) : null,
+        x.delegate ? h("span",{class:"chip",dir:"auto"},"→ "+x.delegate) : null,
+        x.example ? h("span",{class:"chip"},t("example")) : null)));
+}
+function sortTasks(a,b){ return (a.done-b.done) || ((b.top?1:0)-(a.top?1:0)) || ((a.q||2)-(b.q||2)) || String(a.due||"9999").localeCompare(String(b.due||"9999")) || (a.created||0)-(b.created||0); }
+
+function greet(){ const hr=new Date().getHours(); return hr<12?t("goodMorning"):hr<17?t("goodAfternoon"):t("goodEvening"); }
+
+function viewToday(){
+  const td = TODAY();
+  const open = all("task").filter(x=>!x.done);
+  const top = open.filter(x=>x.top).sort(sortTasks).slice(0,3);
+  const due = open.filter(x=>x.due && x.due<=td && !x.top).sort(sortTasks);
+  const habits = all("habit");
+  const out = [];
+  out.push(h("div",{class:"section"},
+    h("div",{class:"eyebrow"},fmtDate(td,{weekday:"long",day:"numeric",month:"long"})),
+    h("h1",null,greet())));
+  if (!AI) out.push(h("div",{class:"banner row",style:"justify-content:space-between"},h("span",{class:"grow"},t("aiOff")),h("button",{type:"button",class:"btn",style:"height:34px;font-size:13px",onclick:openSettings},t("openSettings"))));
+  const slots = [0,1,2].map(i=>{ const x=top[i];
+    return x ? h("div",{class:"slot"},h("span",{class:"num"},String(i+1).padStart(2,"0")),h("span",{class:"t",dir:"auto",style:"cursor:pointer",onclick:()=>openTask(x.id)},x.title),checkBtn(false,()=>toggleTask(x)))
+             : null; }).filter(Boolean);
+  out.push(h("div",{class:"top3"},
+    h("div",{class:"row",style:"justify-content:space-between"},h("span",{class:"eyebrow"},t("top3")),
+      h("button",{type:"button",class:"btn",style:"height:34px;font-size:13px;background:var(--gold);border-color:var(--gold);color:var(--ink)",disabled:UI.planBusy||!AI||!open.length,onclick:planDay},UI.planBusy?h("span",{class:"spinner"}):svg("spark"),UI.planBusy?t("planning"):t("planDay"))),
+    slots.length ? slots : h("div",{class:"empty"},t("top3Empty"))));
+  if (UI.plan){
+    const p = UI.plan;
+    out.push(h("div",{class:"card stack",style:"gap:10px"},
+      h("div",{class:"row",style:"justify-content:space-between"},h("span",{class:"eyebrow"},t("planDay")),h("button",{type:"button",class:"x","aria-label":"Dismiss",onclick:()=>{UI.plan=null;render();}},svg("x"))),
+      h("div",{dir:"auto",style:"white-space:pre-wrap"},p.brief||""),
+      (p.top3||[]).length ? h("ol",{style:"margin:0;padding-inline-start:20px",dir:"auto"},(p.top3||[]).map(id=>S.items.get(id)).filter(Boolean).map(x=>h("li",null,x.title))) : null,
+      (p.tips||[]).length ? h("ul",{class:"small muted",style:"margin:0;padding-inline-start:18px",dir:"auto"},p.tips.map(s=>h("li",null,s))) : null,
+      (p.top3||[]).length ? h("button",{type:"button",class:"btn primary",onclick:applyPlan},t("setTop3")) : null));
+  }
+  out.push(h("div",{class:"section"},h("div",{class:"section-head"},h("h2",null,t("dueSoon")),h("span",{class:"small muted"},String(due.length))),
+    due.length ? due.map(taskRow) : h("p",{class:"muted small",style:"margin:0"},t("nothingDue"))));
+  if (habits.length){
+    out.push(h("div",{class:"section"},h("h2",null,t("habitsToday")),
+      h("div",{class:"row"},habits.map(x=>{ const on=!!(x.log||{})[td];
+        return h("button",{type:"button",class:"btn"+(on?" primary":""),style:"height:38px;font-size:13px",onclick:()=>toggleHabit(x,td)},on?svg("check"):null,h("span",{dir:"auto"},x.name)); }))));
+  }
+  const jToday = all("note").find(n=>n.type==="journal" && n.day===td);
+  out.push(h("div",{class:"card row",style:"justify-content:space-between"},
+    h("div",{class:"grow"},h("div",{style:"font-weight:600"},t("journalPrompt")),jToday?h("div",{class:"small muted",dir:"auto",style:"overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},jToday.text):null),
+    h("button",{type:"button",class:"btn",onclick:()=>{UI.notesTab="journal";go("notes");setTimeout(()=>$("#jText")?.focus(),50);}},t("writeJournal"))));
+  return out;
+}
+
+async function planDay(){
+  if (!AI) return toast(t("aiOff"));
+  UI.planBusy = true; render();
+  try{
+    const res = await AI.json(`You are the chief of staff to a CEO. ${ctxLine()}
+Here are the CEO's open tasks as JSON (quadrant: 1 do now = urgent+important, 2 schedule = important not urgent, 3 delegate = urgent not important, 4 drop):
+${JSON.stringify(taskBrief())}
+Pick the three tasks that most deserve the CEO's personal attention today. Favor overdue and due-today quadrant 1 items, then high-leverage quadrant 2 work. Never pick quadrant 4. Suggest delegation for quadrant 3.
+Write in ${lang==="ar"?"Egyptian-friendly Modern Standard Arabic":"English"}, direct and brief, as a trusted chief of staff would.
+Reply with only JSON: {"top3":["task id", ...up to 3 ids from the list],"brief":"3 short sentences: what to focus on and why","tips":["up to 3 one-line tips, e.g. what to delegate or drop"]}`);
+    UI.plan = {top3:(res.top3||[]).filter(id=>S.items.has(id)).slice(0,3),brief:String(res.brief||""),tips:(res.tips||[]).map(String).slice(0,3)};
+  }catch(e){ toast(aiErrMsg(e)); }
+  UI.planBusy = false; render();
+}
+async function applyPlan(){
+  const ids = new Set(UI.plan.top3);
+  for (const x of all("task")) { const want = ids.has(x.id); if (!!x.top !== want) await patch(x.id,{top:want}); }
+  UI.plan = null; render(); toast(t("saved"));
+}
+
+function viewTasks(){
+  const tasks = all("task").filter(x=>UI.showDone || !x.done).sort(sortTasks);
+  const out = [];
+  out.push(h("div",{class:"section-head"},h("h1",null,t("tasks")),
+    h("button",{type:"button",class:"btn ghost",style:"height:34px;font-size:13px",onclick:()=>{UI.showDone=!UI.showDone;render();}},UI.showDone?t("hideDone"):t("showDone"))));
+  const inp = h("input",{class:"field grow",id:"newTask",dir:"auto",placeholder:t("addTask"),autocomplete:"off"});
+  const submit = e => { e.preventDefault(); const v=inp.value.trim(); if(!v) return; inp.value=""; const id=uid("task"); put(id,{kind:"task",title:v,q:2,done:false,items:[],created:Date.now()}); toast(t("added")); };
+  out.push(h("form",{class:"row",style:"flex-wrap:nowrap",onsubmit:submit},inp,h("button",{class:"btn primary",type:"submit"},t("add"))));
+  out.push(h("div",{class:"seg",role:"group"},
+    ["matrix","list"].map(m=>h("button",{type:"button","aria-pressed":UI.taskMode===m?"true":"false",onclick:()=>{UI.taskMode=m;rememberUI();render();}},t(m)))));
+  if (UI.taskMode==="matrix"){
+    out.push(h("div",{class:"matrix"},Q.map(q=>{ const list=tasks.filter(x=>(x.q||2)===q);
+      return h("div",{class:"quad",style:`--qc:${qColor(q)}`},
+        h("h3",null,h("span",null,t("q"+q)),h("span",{class:"chip"},String(list.filter(x=>!x.done).length))),
+        h("div",{class:"hint"},t("q"+q+"h")),
+        list.map(x=>h("div",{class:"mini"+(x.done?" done":""),onclick:()=>openTask(x.id)},checkBtn(x.done,()=>toggleTask(x)),h("span",{dir:"auto"},(x.top&&!x.done?"★ ":"")+x.title)))); })));
+  } else {
+    out.push(h("div",{class:"stack",style:"gap:8px"},tasks.length?tasks.map(taskRow):h("p",{class:"muted"},t("top3Empty"))));
+  }
+  return out;
+}
+
+/* task sheet */
+let sheetEl = null;
+function closeSheet(){ if (sheetEl){ const f=sheetEl._onclose; sheetEl.remove(); sheetEl=null; if(f) try{f();}catch(e){} } }
+function openSheet(build){
+  closeSheet();
+  const sheet = h("div",{class:"sheet",role:"dialog","aria-modal":"true"});
+  sheetEl = h("div",{class:"scrim",onclick:e=>{ if(e.target===sheetEl) closeSheet(); }},sheet);
+  sheetEl._build = () => { sheet.replaceChildren(h("div",{class:"grab"}),...build(sheet)); };
+  sheetEl._build(); document.body.append(sheetEl);
+}
+function refreshSheet(){ if (sheetEl && sheetEl._build) sheetEl._build(); }
+function openTask(id){
+  let armed = false;
+  openSheet(() => {
+    const x = S.items.get(id); if (!x){ setTimeout(closeSheet); return []; }
+    const items = x.items||[]; const dn = items.filter(i=>i.done).length;
+    const title = h("textarea",{class:"field",id:"tTitle",dir:"auto",rows:"2",style:"min-height:60px;font-weight:600",onchange:e=>patch(id,{title:e.target.value.trim()||x.title})});
+    title.value = x.title;
+    const stepIn = h("input",{class:"field grow",id:"tStep",dir:"auto",placeholder:t("addStep")});
+    const addStep = e => { e.preventDefault(); const v=stepIn.value.trim(); if(!v) return; patch(id,{items:[...items,{t:v,done:false}]}).then(()=>{refreshSheet(); setTimeout(()=>$("#tStep")?.focus(),30);}); };
+    const delBtn = h("button",{type:"button",class:"btn danger ghost",onclick:()=>{ if(!armed){armed=true;delBtn.textContent=t("confirmDel");return;} remove(id); closeSheet(); }},t("del"));
+    return [
+      h("div",{class:"row",style:"justify-content:space-between"},h("span",{class:"eyebrow"},t("task")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
+      title,
+      h("div",{class:"section"},h("span",{class:"eyebrow"},t("priority")),
+        h("div",{class:"qpick"},Q.map(q=>h("button",{type:"button",style:`--qc:${qColor(q)}`,"aria-pressed":(x.q||2)===q?"true":"false",onclick:()=>patch(id,{q}).then(refreshSheet)},h("b",null,t("q"+q)),t("q"+q+"h"))))),
+      h("div",{class:"row",style:"align-items:flex-end"},
+        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("due")),
+          h("input",{type:"date",class:"field",id:"tDue",value:x.due||"",onchange:e=>patch(id,{due:e.target.value||null})})),
+        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("delegateTo")),
+          h("input",{class:"field",id:"tDel",dir:"auto",value:x.delegate||"",onchange:e=>patch(id,{delegate:e.target.value.trim()||null})}))),
+      h("div",{class:"section"},
+        h("div",{class:"section-head"},h("span",{class:"eyebrow"},t("checklist")),items.length?h("span",{class:"small muted",style:"font-variant-numeric:tabular-nums"},`${dn} ${t("of")} ${items.length}`):null),
+        items.length?h("div",{class:"progress"},h("i",{style:`width:${Math.round(dn/items.length*100)}%`})):null,
+        h("div",null,items.map((it,i)=>h("div",{class:"cl-item"+(it.done?" done":"")},
+          checkBtn(it.done,()=>{ const n=items.map((v,j)=>j===i?{...v,done:!v.done}:v); patch(id,{items:n}).then(refreshSheet); }),
+          h("span",{dir:"auto"},it.t),
+          h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>patch(id,{items:items.filter((_,j)=>j!==i)}).then(refreshSheet)},svg("x"))))),
+        h("form",{class:"row",style:"flex-wrap:nowrap",onsubmit:addStep},stepIn,h("button",{type:"submit",class:"btn"},t("add")))),
+      h("div",{class:"row",style:"justify-content:space-between"},
+        h("button",{type:"button",class:"btn",onclick:()=>{ const tops=all("task").filter(y=>y.top&&!y.done&&y.id!==id); if(!x.top && tops.length>=3){ patch(tops[tops.length-1].id,{top:false}); } patch(id,{top:!x.top}).then(refreshSheet); }},svg("star"),x.top?t("unstar"):t("starTop")),
+        delBtn)
+    ];
+  });
+}
+
+/* capture */
+function viewCapture(){
+  const out = [];
+  out.push(h("div",{class:"section"},h("h1",null,t("capTitle")),h("p",{class:"muted",style:"margin:0"},t("capSub"))));
+  out.push(h("button",{type:"button",class:"mic-hero",onclick:()=>openVoice()},h("span",{class:"disc"},svg("mic")),h("span",null,h("b",null,t("tapRec")),h("span",null,t("tapRecSub")))));
+  const ta = h("textarea",{class:"field",id:"capText",dir:"auto",rows:"6",placeholder:t("capPh"),oninput:e=>{UI.capText=e.target.value;rememberUI();}});
+  ta.value = UI.capText;
+  out.push(ta);
+  out.push(h("div",{class:"row"},
+    h("button",{type:"button",class:"btn primary grow",disabled:UI.capBusy||!AI,onclick:analyze},UI.capBusy?h("span",{class:"spinner"}):svg("spark"),UI.capBusy?t("analyzing"):t("analyze")),
+    h("button",{type:"button",class:"btn",onclick:()=>{ const v=UI.capText.trim(); if(!v) return; put(uid("note"),{kind:"note",type:"note",text:v,created:Date.now()}); UI.capText=""; rememberUI(); render(); toast(t("saved")); }},t("saveNote"))));
+  if (!AI && S.ready) out.push(h("div",{class:"banner row",style:"justify-content:space-between"},h("span",{class:"grow"},t("aiOff")),h("button",{type:"button",class:"btn",style:"height:34px;font-size:13px",onclick:openSettings},t("openSettings"))));
+  const r = UI.capResult;
+  if (r){
+    out.push(h("div",{class:"section"},
+      h("div",{class:"section-head"},h("h2",null,t("found")+" "+(r.tasks.length+r.notes.length+(r.journal?1:0))),r.language?h("span",{class:"lang-tag"},t("detected")+": "+r.language):null),
+      r.summary?h("p",{class:"muted",style:"margin:0",dir:"auto"},r.summary):null,
+      r.tasks.map((x,i)=>h("div",{class:"result",style:`--qc:${qColor(x.quadrant)}`},
+        checkBtn(x.sel,()=>{x.sel=!x.sel;render();}),
+        h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),
+          h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null),
+          x.reason?h("div",{class:"why",dir:"auto"},x.reason):null))),
+      r.notes.map(n=>h("div",{class:"result"},checkBtn(n.sel,()=>{n.sel=!n.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("noteKind")),h("div",{dir:"auto",style:"margin-top:4px"},n.text)))),
+      r.journal?h("div",{class:"result"},checkBtn(r.journal.sel,()=>{r.journal.sel=!r.journal.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("journalKind")),h("div",{dir:"auto",style:"margin-top:4px"},r.journal.text))):null,
+      h("button",{type:"button",class:"btn primary",onclick:addCaptured},t("addSel"))));
+  }
+  return out;
+}
+async function analyze(){
+  const text = UI.capText.trim(); if (!text) { $("#capText")?.focus(); return; }
+  if (!AI) return toast(t("aiOff"));
+  UI.capBusy = true; render();
+  try{
+    const res = await AI.json(`You are the executive assistant of a CEO in Egypt. ${ctxLine()}
+${LANG_RULE}
+Organize the message below. Write every task title, checklist step, note and summary in ${lang==="ar"?"Arabic script (convert Franco into proper Arabic; keep English names and brand terms as they are)":"clear English"}.
+Prioritize each task with the Eisenhower matrix: 1 = urgent and important (deadlines today or tomorrow, money, legal, clients, people crises), 2 = important not urgent (strategy, hiring, planning, health, relationships), 3 = urgent not important (routine requests someone else can handle; name a delegate if the message mentions one), 4 = neither.
+Resolve relative dates to YYYY-MM-DD. Split a task with several steps into a checklist.
+Message:
+"""${text}"""
+Reply with only JSON:
+{"language":"english|arabic|franco|mixed","summary":"one sentence","tasks":[{"title":"short imperative","quadrant":1,"due":"YYYY-MM-DD or null","checklist":["step"],"delegateTo":"name or null","reason":"why this quadrant, under 12 words"}],"notes":["information worth keeping that is not a task"],"journal":"personal reflection or feelings in the message, or null"}`);
+    UI.capResult = {
+      language:String(res.language||""), summary:String(res.summary||""),
+      tasks:(Array.isArray(res.tasks)?res.tasks:[]).map(x=>({title:String(x.title||"").trim(),quadrant:[1,2,3,4].includes(+x.quadrant)?+x.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:null,checklist:(Array.isArray(x.checklist)?x.checklist:[]).map(String).filter(Boolean),delegateTo:x.delegateTo&&x.delegateTo!=="null"?String(x.delegateTo):null,reason:String(x.reason||""),sel:true})).filter(x=>x.title),
+      notes:(Array.isArray(res.notes)?res.notes:[]).map(s=>({text:String(s),sel:true})).filter(n=>n.text.trim()),
+      journal:res.journal && res.journal!=="null" ? {text:String(res.journal),sel:true} : null };
+  }catch(e){ toast(aiErrMsg(e)); }
+  UI.capBusy = false; render();
+}
+async function addCaptured(){
+  const r = UI.capResult; if (!r) return; let n=0; const now=Date.now();
+  for (const x of r.tasks.filter(x=>x.sel)){ await put(uid("task"),{kind:"task",title:x.title,q:x.quadrant,due:x.due,done:false,delegate:x.delegateTo,items:x.checklist.map(s=>({t:s,done:false})),source:UI.capText.slice(0,500),created:now+n}); n++; }
+  for (const x of r.notes.filter(x=>x.sel)){ await put(uid("note"),{kind:"note",type:"note",text:x.text,created:now+n}); n++; }
+  if (r.journal && r.journal.sel){
+    const td=TODAY(); const ex=all("note").find(j=>j.type==="journal"&&j.day===td);
+    if (ex) await patch(ex.id,{text:ex.text+"\n\n"+r.journal.text}); else await put(uid("note"),{kind:"note",type:"journal",day:td,text:r.journal.text,created:now});
+    n++;
+  }
+  UI.capResult=null; UI.capText=""; rememberUI(); toast(`${t("added")}: ${n}`); go("tasks");
+}
+
+/* notes */
+function viewNotes(){
+  const out=[]; const td=TODAY();
+  out.push(h("h1",null,t("notesT")));
+  out.push(h("div",{class:"seg",role:"group"},["notes","voice","journal"].map(m=>h("button",{type:"button","aria-pressed":UI.notesTab===m?"true":"false",onclick:()=>{UI.notesTab=m;rememberUI();render();}},t(m==="notes"?"notesT":m)))));
+  if (UI.notesTab==="voice"){
+    const vs=all("voice").sort((a,b)=>(b.created||0)-(a.created||0));
+    out.push(h("button",{type:"button",class:"mic-hero",onclick:()=>openVoice()},h("span",{class:"disc"},svg("mic")),h("span",null,h("b",null,t("tapRec")),h("span",null,t("tapRecSub")))));
+    out.push(vs.length?vs.map(voiceCard):h("p",{class:"muted"},t("noVoice")));
+    return out;
+  }
+  if (UI.notesTab==="notes"){
+    const ta=h("textarea",{class:"field",id:"nText",dir:"auto",rows:"3",style:"min-height:84px",placeholder:t("newNote")});
+    out.push(h("div",{class:"stack",style:"gap:8px"},ta,h("div",{class:"row",style:"justify-content:flex-end"},h("button",{type:"button",class:"btn primary",onclick:()=>{const v=ta.value.trim(); if(!v) return; put(uid("note"),{kind:"note",type:"note",text:v,created:Date.now()}); toast(t("saved"));}},t("save")))));
+    const notes=all("note").filter(n=>n.type!=="journal").sort((a,b)=>(b.created||0)-(a.created||0));
+    out.push(notes.length?notes.map(noteCard):h("p",{class:"muted"},t("noNotes")));
+  } else {
+    const cur=all("note").find(n=>n.type==="journal"&&n.day===td);
+    const ta=h("textarea",{class:"field",id:"jText",dir:"auto",rows:"5",placeholder:t("journalPrompt")}); ta.value=cur?cur.text:"";
+    out.push(h("div",{class:"card stack",style:"gap:10px"},h("span",{class:"eyebrow"},t("entryFor")+" "+fmtDate(td,{weekday:"long",day:"numeric",month:"long"})),ta,
+      h("div",{class:"row",style:"justify-content:flex-end"},h("button",{type:"button",class:"btn primary",onclick:()=>{const v=ta.value.trim(); if(!v) return; if(cur) patch(cur.id,{text:v}); else put(uid("note"),{kind:"note",type:"journal",day:td,text:v,created:Date.now()}); toast(t("saved"));}},t("save")))));
+    const past=all("note").filter(n=>n.type==="journal"&&n.day!==td).sort((a,b)=>String(b.day).localeCompare(String(a.day)));
+    out.push(past.length?past.map(noteCard):h("p",{class:"muted"},t("noJournal")));
+  }
+  return out;
+}
+function noteCard(n){
+  let armed=false;
+  const del=h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>{ if(!armed){armed=true;del.style.color="var(--danger)";toast(t("confirmDel"));return;} remove(n.id);}},svg("x"));
+  return h("div",{class:"card"},
+    n.type==="journal"?h("div",{class:"eyebrow",style:"margin-bottom:6px"},fmtDate(n.day,{weekday:"short",day:"numeric",month:"short"})):null,
+    h("div",{class:"note",dir:"auto"},n.text),
+    h("div",{class:"note-meta"},h("span",null,n.created?new Date(n.created).toLocaleString(lang==="ar"?"ar-EG":"en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"" , n.example?" · "+t("example"):""),del));
+}
+
+/* habits */
+function streakOf(x){ const log=x.log||{}; let k=TODAY(); if(!log[k]) k=addDays(k,-1); let s=0; while(log[k]){s++;k=addDays(k,-1);} return s; }
+function toggleHabit(x,day){ const log={...(x.log||{})}; if(log[day]) delete log[day]; else log[day]=true; patch(x.id,{log}); }
+function viewHabits(){
+  const out=[]; const td=TODAY(); const days=[...Array(7)].map((_,i)=>addDays(td,i-6));
+  out.push(h("h1",null,t("habitsT")));
+  const hs=all("habit").sort((a,b)=>(a.created||0)-(b.created||0));
+  if(!hs.length) out.push(h("p",{class:"muted"},t("noHabits")));
+  for (const x of hs){
+    let armed=false;
+    const del=h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>{ if(!armed){armed=true;del.style.color="var(--danger)";toast(t("confirmDel"));return;} remove(x.id);}},svg("x"));
+    const s=streakOf(x);
+    out.push(h("div",{class:"card habit"},
+      h("div",{class:"hrow"},h("div",{class:"grow"},h("div",{style:"font-weight:600",dir:"auto"},x.name),h("div",{class:"streak"},`${s} ${t("streak")}`)),del),
+      h("div",{class:"days"},days.map(d=>{const on=!!(x.log||{})[d];
+        return h("button",{type:"button",class:"day","aria-pressed":on?"true":"false","aria-label":fmtDate(d),onclick:()=>toggleHabit(x,d)},
+          h("span",{class:"dot"+(on?" on":"")+(d===td?" today":"")},on?svg("check"):null),
+          h("span",null,fmtDate(d,{weekday:"narrow"})));}))));
+  }
+  const inp=h("input",{class:"field grow",id:"hName",dir:"auto",placeholder:t("addHabit")});
+  out.push(h("form",{class:"row",style:"flex-wrap:nowrap",onsubmit:e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;inp.value="";put(uid("habit"),{kind:"habit",name:v,log:{},created:Date.now()});}},inp,h("button",{type:"submit",class:"btn primary"},t("add"))));
+  return out;
+}
+
+/* assistant */
+function viewAsk(){
+  const out=[];
+  out.push(h("div",{class:"row"},h("button",{type:"button",class:"iconbtn","aria-label":"Back",onclick:()=>go("today")},svg("back")),h("div",{class:"grow"},h("h1",null,t("askT")))));
+  out.push(h("p",{class:"muted",style:"margin:0"},t("askSub")));
+  if(!AI && S.ready) out.push(h("div",{class:"banner"},t("aiOff")));
+  const chat=h("div",{class:"chat",id:"chat"},UI.chat.map(m=>h("div",{class:"msg "+m.role,dir:"auto"},m.text||(m.role==="ai"?"…":""))));
+  out.push(chat);
+  if(!UI.chat.length) out.push(h("div",{class:"suggest"},["s1","s2","s3"].map(k=>h("button",{type:"button",dir:"auto",onclick:()=>sendChat(t(k))},t(k)))));
+  const ta=h("textarea",{class:"field grow",id:"chatIn",dir:"auto",rows:"1",placeholder:t("askPh"),onkeydown:e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat(ta.value);}}});
+  out.push(h("div",{class:"composer"},ta,h("button",{type:"button",class:"btn primary","aria-label":t("send"),disabled:UI.chatBusy||!AI,style:"width:46px;padding:0;height:46px",onclick:()=>sendChat(ta.value)},UI.chatBusy?h("span",{class:"spinner"}):svg("send"))));
+  return out;
+}
+async function sendChat(text){
+  text=(text||"").trim(); if(!text||UI.chatBusy) return; if(!AI) return toast(t("aiOff")); const ci=$("#chatIn"); if(ci) ci.value="";
+  UI.chat.push({role:"me",text}); const reply={role:"ai",text:""}; UI.chat.push(reply); UI.chatBusy=true; render();
+  const sys=`You are Maktab, the personal executive assistant of a CEO in Egypt. ${ctxLine()}
+${LANG_RULE}
+Always reply in the same language and script the CEO used in their latest message: English → English, Arabic → Arabic, Franco → Franco. Be concise, warm and decisive, like a seasoned chief of staff. Use short paragraphs or brief lists; no markdown headings.
+You can manage the CEO's task list with the tools. Use add_task when they ask you to add, remember or schedule something, and complete_task when they say something is done. Confirm briefly what you changed.
+Current open tasks (quadrant 1 do now, 2 schedule, 3 delegate, 4 drop): ${JSON.stringify(taskBrief())}
+Habits: ${JSON.stringify(all("habit").map(x=>({name:x.name,doneToday:!!(x.log||{})[TODAY()],streak:streakOf(x)})))}`;
+  const history=UI.chat.slice(0,-1).filter(m=>m.role!=="tool").slice(-12).map(m=>({role:m.role==="me"?"user":"assistant",content:m.text||"…"})).filter(m=>m.content);
+  while(history.length && history[0].role!=="user") history.shift();
+  const tools=[
+    {name:"add_task",description:"Add a task to the CEO's list.",inputSchema:{type:"object",properties:{title:{type:"string"},quadrant:{type:"integer",enum:[1,2,3,4]},due:{type:"string",description:"YYYY-MM-DD or empty"},checklist:{type:"array",items:{type:"string"}},delegateTo:{type:"string"}},required:["title","quadrant"]},
+      execute:async i=>{ const id=uid("task"); await put(id,{kind:"task",title:String(i.title),q:[1,2,3,4].includes(+i.quadrant)?+i.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(i.due||"")?i.due:null,delegate:i.delegateTo||null,items:(i.checklist||[]).map(s=>({t:String(s),done:false})),done:false,created:Date.now()}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"＋ "+i.title}); render(); return {ok:true,id}; }},
+    {name:"complete_task",description:"Mark one of the CEO's open tasks as done, by id.",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},
+      execute:async i=>{ const x=S.items.get(i.id); if(!x||x.kind!=="task") throw new Error("No task with that id"); await patch(x.id,{done:true,doneAt:Date.now(),top:false}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"✓ "+x.title}); render(); return {ok:true}; }}
+  ];
+  try{
+    reply.text = await AI.chat(sys, history, tools);
+  }catch(e){ reply.text = aiErrMsg(e); }
+  UI.chatBusy=false; render(); setTimeout(()=>$("#chatIn")?.focus(),30); window.scrollTo({top:document.body.scrollHeight});
+}
+
+/* settings */
+function openSettings(){
+  openSheet(()=>{
+    const st=settings();
+    const bioBtn=h("button",{type:"button",class:"btn",disabled:!!st.bioId||!bioSupported(),onclick:async()=>{
+      try{ const id=await bioCreate(); await put("settings",{...settings(),bioId:id}); toast(t("bioOn")); refreshSheet(); }
+      catch(e){ toast(t("bioNA")); }
+    }},svg("finger"),st.bioId?t("bioOn"):t("bioOff"));
+    const ck=h("input",{class:"field",id:"cfgClaude",type:"password",autocomplete:"off",placeholder:"sk-ant-…",value:CFG.claudeKey||""});
+    const ok=h("input",{class:"field",id:"cfgOpenai",type:"password",autocomplete:"off",placeholder:"sk-…",value:CFG.openaiKey||""});
+    const md=h("select",{class:"field",id:"cfgModel"},[["claude-sonnet-5-5","Claude Sonnet 5.5"],["claude-opus-5-5","Claude Opus 5.5"],["claude-haiku-5-5","Claude Haiku 5.5 (fastest)"]].map(([v,l])=>h("option",{value:v,selected:CFG.model===v},l)));
+    const eng=h("select",{class:"field",id:"cfgEngine"},[["phone",t("engPhone")],["whisper",t("engWhisper")]].map(([v,l])=>h("option",{value:v,selected:CFG.engine===v},l)));
+    const sl=h("select",{class:"field",id:"cfgLang"},[["ar-EG",t("arabic")],["en-US",t("english")]].map(([v,l])=>h("option",{value:v,selected:CFG.speechLang===v},l)));
+    const imp=h("input",{type:"file",accept:"application/json,.json",hidden:true,onchange:async e=>{
+      const f=e.target.files[0]; if(!f) return;
+      try{ const data=JSON.parse(await f.text()); if(!Array.isArray(data.items)) throw 0; S.items=new Map(data.items.map(x=>[x.id,x])); persist(); render(); toast(t("imported")); closeSheet(); }
+      catch(err){ toast(lang==="ar"?"الملف ليس نسخة احتياطية من مكتب.":"That file isn't a Maktab backup."); }
+    }});
+    return [
+      h("div",{class:"row",style:"justify-content:space-between"},h("h2",null,t("settings")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
+      h("div",{class:"section"},h("span",{class:"eyebrow"},t("language")),
+        h("div",{class:"seg"},[["en","English"],["ar","العربية"]].map(([k,l])=>h("button",{type:"button","aria-pressed":lang===k?"true":"false",onclick:()=>{lang=k;try{localStorage.setItem("mk_lang",k);}catch(e){} applyLang(); render(); refreshSheet();}},l)))),
+      h("div",{class:"section"},h("span",{class:"eyebrow"},"AI"),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("claudeKey")),ck,h("span",{class:"small muted"},t("claudeKeyHint"))),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("model")),md),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("engine")),eng),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("speechLang")),sl),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("openaiKey")),ok),
+        h("button",{type:"button",class:"btn primary",onclick:()=>{ CFG.claudeKey=ck.value.trim(); CFG.openaiKey=ok.value.trim(); CFG.model=md.value; CFG.engine=eng.value; CFG.speechLang=sl.value; saveCfg(); render(); toast(t("keysSaved")); }},t("save"))),
+      h("div",{class:"section"},h("span",{class:"eyebrow"},t("security")),
+        h("div",{class:"card row",style:"justify-content:space-between"},h("span",null,t("bio")),bioBtn),
+        !bioSupported()?h("p",{class:"small muted",style:"margin:0"},t("bioNA")):null,
+        h("div",{class:"row"},h("button",{type:"button",class:"btn grow",onclick:lockNow},t("lockNow")),h("button",{type:"button",class:"btn grow",onclick:()=>{closeSheet();LOCK.unlocked=false;showLock("setup");}},t("changePin"))),
+        h("p",{class:"small muted",style:"margin:0"},t("privacy"))),
+      h("div",{class:"section"},h("span",{class:"eyebrow"},t("backup")),
+        h("div",{class:"row"},
+          h("button",{type:"button",class:"btn grow",onclick:()=>{ const blob=new Blob([JSON.stringify({app:"maktab",exported:new Date().toISOString(),items:[...S.items.values()]},null,1)],{type:"application/json"}); const a=h("a",{href:URL.createObjectURL(blob),download:"maktab-backup-"+TODAY()+".json"}); document.body.append(a); a.click(); a.remove(); }},t("exportB")),
+          h("button",{type:"button",class:"btn grow",onclick:()=>imp.click()},t("importB")),imp),
+        h("p",{class:"small muted",style:"margin:0"},lang==="ar"?"النسخة الاحتياطية تشمل المهام والملاحظات ونصوص الصوتيات، بدون التسجيلات الصوتية والمفاتيح.":"Backups include tasks, notes and voice transcripts, but not audio recordings or API keys.")),
+      h("div",{class:"section"},h("span",{class:"eyebrow"},t("sample")),
+        h("div",{class:"row"},h("button",{type:"button",class:"btn grow",onclick:()=>{loadSample();closeSheet();}},t("loadSample")),h("button",{type:"button",class:"btn grow",onclick:async()=>{for(const x of [...S.items.values()].filter(x=>x.example)) await remove(x.id); toast(t("saved"));}},t("clearSample"))))
+    ];
+  });
+}
+
+/* ---------- voice ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function fmtDur(ms){ const s=Math.round(ms/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function voiceEngine(){ if (CFG.engine==="whisper" && CFG.openaiKey) return "whisper"; if (SR) return "phone"; if (CFG.openaiKey) return "whisper"; return "none"; }
+async function whisper(blob){
+  const fd=new FormData(); const ext=(blob.type.includes("mp4")||blob.type.includes("m4a"))?"m4a":blob.type.includes("ogg")?"ogg":"webm";
+  fd.append("file",blob,"voice."+ext); fd.append("model","whisper-1");
+  fd.append("prompt","Egyptian Arabic and English business voice note. ملاحظة صوتية بالعامية المصرية والإنجليزية عن العمل.");
+  const r=await fetch("https://api.openai.com/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+CFG.openaiKey},body:fd});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error((j.error&&j.error.message)||("HTTP "+r.status));
+  return String(j.text||"").trim();
+}
+function openVoice(){
+  const V = { state:"idle", lang:CFG.speechLang||"ar-EG", final:"", interim:"", started:0, timer:null, rec:null, mr:null, stream:null, chunks:[], blob:null, err:"", stopAsked:false };
+  const engine = voiceEngine();
+  let tickEl=null, liveEl=null;
+  function stopTracks(){ if(V.stream){ V.stream.getTracks().forEach(tr=>tr.stop()); V.stream=null; } }
+  function tick(){ if(tickEl) tickEl.textContent=fmtDur(Date.now()-V.started); }
+  function paintLive(){ if(liveEl && V.state==="rec"){ liveEl.replaceChildren(h("span",null,V.final),h("span",{class:"interim"}," "+V.interim)); } }
+  async function start(){
+    V.err=""; V.final=""; V.interim=""; V.blob=null; V.chunks=[]; V.stopAsked=false;
+    try{
+      if (engine==="whisper"){
+        V.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+        const type=["audio/webm;codecs=opus","audio/mp4","audio/webm","audio/ogg"].find(x=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(x))||"";
+        V.mr = new MediaRecorder(V.stream, type?{mimeType:type}:undefined);
+        V.mr.ondataavailable = e => { if(e.data && e.data.size) V.chunks.push(e.data); };
+        V.mr.onstop = async () => {
+          stopTracks(); V.blob=new Blob(V.chunks,{type:V.mr.mimeType||type||"audio/webm"});
+          V.state="busy"; refreshSheet();
+          try{ V.final = await whisper(V.blob); }catch(e){ V.err=(lang==="ar"?"تعذّر التحويل لنص: ":"Couldn't transcribe: ")+e.message; }
+          V.state="review"; refreshSheet();
+        };
+        V.mr.start(1000);
+      } else {
+        const rec = new SR(); V.rec=rec;
+        rec.lang=V.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+        rec.onresult = e => { let fin="", im=""; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript+" "; else im+=r[0].transcript; } V.final=(V.base||"")+fin; V.interim=im; paintLive(); };
+        rec.onerror = e => { if(e.error==="not-allowed"||e.error==="service-not-allowed"){ V.err=t("micDenied"); V.stopAsked=true; } else if(e.error!=="no-speech" && e.error!=="aborted"){ V.err=e.error; } };
+        rec.onend = () => {
+          if (!V.stopAsked && V.state==="rec"){ V.base=V.final; try{ rec.start(); return; }catch(e){} }
+          V.final=(V.final+" "+V.interim).trim(); V.interim=""; V.state="review"; clearInterval(V.timer); refreshSheet();
+        };
+        V.base=""; rec.start();
+      }
+      V.state="rec"; V.started=Date.now(); V.timer=setInterval(tick,500); refreshSheet();
+    }catch(e){ stopTracks(); V.err = (e && (e.name==="NotAllowedError"||e.name==="SecurityError")) ? t("micDenied") : String(e.message||e); V.state="idle"; refreshSheet(); }
+  }
+  function stop(){
+    V.stopAsked=true; clearInterval(V.timer); V.dur=Date.now()-V.started;
+    if (V.mr && V.mr.state!=="inactive") V.mr.stop();
+    if (V.rec) { try{ V.rec.stop(); }catch(e){} }
+  }
+  async function saveVoice(){
+    const text=($("#vText")?.value||V.final).trim(); const id=uid("voice"); let audioId=null;
+    if (V.blob){ audioId="a_"+id; try{ await IDB.put(audioId,V.blob); }catch(e){ audioId=null; } }
+    await put(id,{kind:"voice",text,lang:V.lang,dur:V.dur||0,audioId,created:Date.now()});
+    return text;
+  }
+  setTimeout(()=>{ if(sheetEl) sheetEl._onclose=()=>{ if(V.state==="rec"){ V.err=""; stop(); } }; });
+  openSheet(()=>{
+    const busy = V.state==="busy";
+    const out=[
+      h("div",{class:"row",style:"justify-content:space-between"},h("h2",null,t("voiceTitle")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:()=>{ if(V.state==="rec") stop(); closeSheet(); }},t("close"))),
+    ];
+    if (engine==="phone") out.push(h("div",{class:"seg",role:"group"},[["ar-EG",t("arabic")],["en-US",t("english")]].map(([k,l])=>h("button",{type:"button","aria-pressed":V.lang===k?"true":"false",disabled:V.state==="rec",onclick:()=>{V.lang=k;CFG.speechLang=k;saveCfg();refreshSheet();}},l))));
+    if (engine==="none"){ out.push(h("div",{class:"banner"},t("noSR"))); return out; }
+    if (V.state!=="review"){
+      tickEl=h("div",{class:"timer"},V.state==="rec"?fmtDur(Date.now()-V.started):"0:00");
+      out.push(h("div",{class:"rec-wrap"},
+        h("button",{type:"button",class:"rec-btn"+(V.state==="rec"?" on":""),disabled:busy,"aria-label":V.state==="rec"?"Stop":"Record",onclick:()=>V.state==="rec"?stop():start()},busy?h("span",{class:"spinner",style:"width:32px;height:32px;border-width:3px"}):svg("mic")),
+        tickEl,
+        h("div",{class:"muted small"},busy?t("transcribing"):V.state==="rec"?t("listening"):t("tapStart"))));
+      liveEl=h("div",{class:"card live",dir:"auto"},V.final);
+      if (engine==="phone" && V.state==="rec") { out.push(liveEl); setTimeout(paintLive); }
+      if (engine==="whisper") out.push(h("p",{class:"small muted",style:"margin:0;text-align:center"},"Whisper · "+(lang==="ar"?"يدعم العربي والإنجليزي معاً":"handles Arabic and English mixed")));
+    } else {
+      if (V.blob) out.push(h("audio",{controls:true,src:URL.createObjectURL(V.blob)}));
+      const ta=h("textarea",{class:"field",id:"vText",dir:"auto",rows:"6"}); ta.value=V.final;
+      out.push(h("div",{class:"section"},h("span",{class:"eyebrow"},t("transcript")),ta,h("span",{class:"small muted"},t("editHint"))));
+      out.push(h("div",{class:"row"},
+        h("button",{type:"button",class:"btn primary grow",disabled:!AI,onclick:async()=>{ const txt=await saveVoice(); if(!txt) return; UI.capText=txt; rememberUI(); closeSheet(); go("capture"); analyze(); }},svg("spark"),t("analyze")),
+        h("button",{type:"button",class:"btn",onclick:async()=>{ await saveVoice(); closeSheet(); toast(t("saved")); }},t("saveVoice"))));
+      out.push(h("button",{type:"button",class:"btn ghost",onclick:()=>{V.state="idle";V.final="";V.blob=null;refreshSheet();}},svg("mic"),lang==="ar"?"سجّل من جديد":"Record again"));
+    }
+    if (V.err) out.push(h("div",{class:"banner",role:"alert"},V.err));
+    out.push(h("button",{type:"button",class:"btn ghost small",onclick:()=>{ if(V.state==="rec") stop(); closeSheet(); go("capture"); setTimeout(()=>$("#capText")?.focus(),50); }},t("typeInstead")));
+    return out;
+  });
+}
+function voiceCard(v){
+  let armed=false; const audioBox=h("div");
+  const del=h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>{ if(!armed){armed=true;del.style.color="var(--danger)";toast(t("confirmDel"));return;} remove(v.id);}},svg("x"));
+  return h("div",{class:"card stack",style:"gap:8px"},
+    h("div",{class:"row",style:"justify-content:space-between"},
+      h("span",{class:"eyebrow"},new Date(v.created).toLocaleString(lang==="ar"?"ar-EG":"en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+(v.dur?" · "+fmtDur(v.dur):"")),
+      h("div",{class:"row",style:"gap:4px"},
+        v.audioId?h("button",{type:"button",class:"btn",style:"height:32px;font-size:13px",onclick:async e=>{ e.currentTarget.remove(); try{ const b=await IDB.get(v.audioId); if(b) audioBox.replaceChildren(h("audio",{controls:true,autoplay:true,src:URL.createObjectURL(b)})); }catch(err){} }},"▶ "+t("play")):null,
+        del)),
+    audioBox,
+    h("div",{class:"note",dir:"auto"},v.text||"—"),
+    AI&&v.text?h("button",{type:"button",class:"btn",style:"align-self:flex-start;height:36px;font-size:13px",onclick:()=>{UI.capText=v.text;rememberUI();go("capture");analyze();}},svg("spark"),t("analyze")):null);
+}
+async function loadSample(){
+  const td=TODAY(), now=Date.now(); const ar=lang==="ar";
+  const rows=[
+    {kind:"task",title:ar?"مراجعة التدفق النقدي للربع الرابع مع المدير المالي":"Review Q4 cash-flow forecast with the CFO",q:1,due:td,top:true,items:[{t:ar?"طلب الأرقام المحدثة":"Request updated numbers",done:true},{t:ar?"مراجعة سيناريو سعر الصرف":"Check FX scenario",done:false},{t:ar?"اعتماد الخطة":"Sign off",done:false}]},
+    {kind:"task",title:ar?"الرد على عرض البنك بخصوص التمويل":"Reply to the bank's financing offer",q:1,due:addDays(td,-1),top:true,items:[]},
+    {kind:"task",title:ar?"تجهيز عرض مجلس الإدارة":"Prepare the board meeting deck",q:2,due:addDays(td,4),top:true,items:[{t:ar?"ملخص الأداء":"Performance summary",done:false},{t:ar?"خطة ٢٠٢٧":"2027 plan",done:false}]},
+    {kind:"task",title:ar?"مقابلة مرشح مدير المبيعات":"Interview the sales director candidate",q:2,due:addDays(td,2),items:[]},
+    {kind:"task",title:ar?"تأكيد حجز فندق مؤتمر دبي":"Confirm hotel for the Dubai conference",q:3,due:addDays(td,1),delegate:ar?"منى":"Mona",items:[]},
+    {kind:"task",title:ar?"تحديث صورة الملف على لينكدإن":"Update LinkedIn profile photo",q:4,items:[]},
+    {kind:"note",type:"note",text:ar?"فكرة: برنامج ولاء لكبار العملاء يبدأ في يناير.":"Idea: loyalty program for top-20 accounts, launch in January."},
+    {kind:"habit",name:ar?"مشي ٣٠ دقيقة":"30-min walk",log:{[addDays(td,-1)]:true,[addDays(td,-2)]:true,[addDays(td,-4)]:true}},
+    {kind:"habit",name:ar?"قراءة ٢٠ صفحة":"Read 20 pages",log:{[addDays(td,-1)]:true}}
+  ];
+  let i=0; for(const r of rows){ await put(uid(r.kind),{done:false,...r,example:true,created:now+i++}); }
+  toast(t("added")+": "+rows.length); go("today");
+}
+
+/* ---------- render ---------- */
+function go(tab){ TAB=tab; if(tab!=="ask") rememberUI(); window.scrollTo({top:0}); render(); }
+function render(){
+  if (!S.ready) return;
+  const views={today:viewToday,tasks:viewTasks,capture:viewCapture,notes:viewNotes,habits:viewHabits,ask:viewAsk};
+  const active=document.activeElement; const aid=active&&active.id; const sel=aid&&("selectionStart" in active)?[active.selectionStart,active.selectionEnd]:null;
+  const keep = aid ? active.value : null;
+  $("#view").replaceChildren(...(views[TAB]||viewToday)());
+  if (aid){ const n=document.getElementById(aid); if(n && !n.closest(".sheet")){ if(keep!=null && n.value!==keep && aid!=="capText") n.value=keep; n.focus({preventScroll:true}); if(sel) try{n.setSelectionRange(sel[0],sel[1]);}catch(e){} } }
+  document.querySelectorAll("nav.tabs [data-tab]").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===TAB?"page":"false"));
+  if (sheetEl && !document.activeElement.closest?.(".sheet")) refreshSheet();
+}
+document.querySelectorAll("nav.tabs [data-tab]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.tab)));
+$("#askBtn").addEventListener("click",()=>go("ask"));
+$("#menuBtn").addEventListener("click",openSettings);
+$("#fabMic").addEventListener("click",()=>openVoice());
+
+/* ---------- boot ---------- */
+applyLang();
+function afterLoad(){
+  S.ready=true; render();
+  const st=settings();
+  let fresh=false; try{ const u=+sessionStorage.getItem("mk_unlock"); fresh = u && Date.now()-u < 10*60*1000; }catch(e){}
+  if (!st.pinHash) showLock("setup");
+  else if (fresh) unlock();
+  else showLock("unlock");
+}
+loadLocal(); afterLoad();
+if ("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
