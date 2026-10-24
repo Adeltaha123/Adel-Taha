@@ -1,4 +1,4 @@
-# Maktab Assistant
+# My PA
 
 A private, phone-first executive assistant for a CEO.
 
@@ -27,8 +27,8 @@ On first open you choose a PIN, and the phone offers to register your fingerprin
 ## Turn on the AI
 
 1. Create an API key at platform.claude.com/settings/keys (choose the Default Workspace), or an OpenAI key at platform.openai.com/api-keys.
-2. In Maktab, open **Settings (⚙) → AI**, paste the key, choose **Who analyzes your notes** (Claude or ChatGPT), and tap **Save**.
-3. With an OpenAI key, Maktab switches the **Voice engine** to OpenAI transcription, which is best for long or mixed Arabic-English voice notes.
+2. In My PA, open **Settings (⚙) → AI**, paste the key, choose **Who analyzes your notes** (Claude or ChatGPT), and tap **Save**.
+3. With an OpenAI key, My PA switches the **Voice engine** to OpenAI transcription, which is best for long or mixed Arabic-English voice notes.
 
 ## Privacy and safety
 
@@ -42,3 +42,9 @@ On first open you choose a PIN, and the phone offers to register your fingerprin
 - The first time you record, allow microphone access.
 - **Phone speech** is free and live. It uses Google's speech service on Android and Apple's on iPhone. Choose Arabic or English before recording.
 - If the transcript misses a word, fix it in the box before tapping **Analyze & organize**.
+
+## Bring in tasks from Meta AI or WhatsApp
+
+- **Share the whole chat:** in WhatsApp, open the Meta AI chat, tap ⋮ → More → Export chat → Without media, then pick **My PA**. My PA reads it, finds the upcoming meetings, schedules and tasks, and shows them for you to review.
+- **Or paste:** copy the messages, open My PA → the mic tab → paste into the box → **Analyze & organize** → **Add selected**.
+- Sharing to My PA works once the app is installed on the home screen (Android Chrome).
