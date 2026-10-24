@@ -33,7 +33,7 @@ On first open you choose a PIN, and the phone offers to register your fingerprin
 ## Privacy and safety
 
 - Tasks, notes, voice notes and keys are stored **only on this phone**, in the browser's storage. Nothing is uploaded to GitHub.
-- Text is sent to Anthropic only when you use an AI feature, and audio is sent to OpenAI only when Whisper is on.
+- Text goes to the AI you chose (Anthropic or OpenAI) only when you use an AI feature. Audio goes to OpenAI only when the OpenAI voice engine is on.
 - Use **Settings → Export backup** regularly. Clearing browser data or losing the phone erases everything else.
 - The API keys live on the device. If the phone is lost, revoke the keys in the Anthropic and OpenAI consoles.
 
