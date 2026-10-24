@@ -385,6 +385,7 @@ const IDB = {
 /* settings kept outside the synced items so keys never land in a backup by accident */
 const CFG = { provider:"claude", claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", openaiModel:"gpt-6.1-sol", engine:"phone", speechLang:"ar-EG" };
 try { Object.assign(CFG, JSON.parse(localStorage.getItem("mk_cfg")||"{}")); } catch(e){}
+if (!CFG.engineV){ if (CFG.openaiKey) CFG.engine="whisper"; CFG.engineV=2; try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} }
 function saveCfg(){ try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} AI = pickAI(); }
 
 /* ---------- lock ---------- */
@@ -885,7 +886,7 @@ function openSettings(){
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},"OpenAI "+t("model")),om),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("engine")),eng),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("speechLang")),sl),
-        h("button",{type:"button",class:"btn primary",onclick:()=>{ const hadO=!!CFG.openaiKey; CFG.provider=pv.value; CFG.claudeKey=ck.value.trim(); CFG.openaiKey=ok.value.trim(); CFG.model=md.value; CFG.openaiModel=om.value; CFG.engine=(!hadO && CFG.openaiKey && eng.value==="phone") ? "whisper" : eng.value; CFG.speechLang=sl.value; saveCfg(); render(); toast(t("keysSaved")); }},t("save"))),
+        h("button",{type:"button",class:"btn primary",onclick:()=>{ const hadO=!!CFG.openaiKey; CFG.provider=pv.value; CFG.claudeKey=ck.value.trim(); CFG.openaiKey=ok.value.trim(); CFG.model=md.value; CFG.openaiModel=om.value; CFG.engine=(!hadO && CFG.openaiKey && eng.value==="phone") ? "whisper" : eng.value; CFG.engineV=2; CFG.speechLang=sl.value; saveCfg(); render(); toast(t("keysSaved")); }},t("save"))),
       h("div",{class:"section"},h("span",{class:"eyebrow"},t("security")),
         h("div",{class:"card row",style:"justify-content:space-between"},h("span",null,t("bio")),bioBtn),
         !bioSupported()?h("p",{class:"small muted",style:"margin:0"},t("bioNA")):null,
@@ -1008,12 +1009,12 @@ function openVoice(){
       out.push(h("div",{class:"rec-wrap"},
         h("button",{type:"button",class:"rec-btn"+(V.state==="rec"?" on":""),"aria-label":V.state==="rec"?"Stop":"Record",onclick:()=>V.state==="rec"?stop():start()},V.state==="rec"?h("span",{style:"width:34px;height:34px;border-radius:8px;background:currentColor"}):svg("mic")),
         tickEl,
-        h("div",{class:"muted",style:"text-align:center"},V.state==="rec"?(ar?"أنا أسمعك… اضغط عندما تنتهي":"I'm listening… tap when you're done"):(ar?"اضغط وتحدث بشكل طبيعي. سأفهم وأنظم كل شيء.":"Tap and speak naturally. I'll understand and organize it."))));
+        h("div",{class:"muted",style:"text-align:center"},V.state==="rec"?(engine==="whisper"?(ar?"ChatGPT يسمعك… اضغط عندما تنتهي":"ChatGPT is listening… tap when you're done"):(ar?"الهاتف يسمعك… اضغط عندما تنتهي":"Phone is listening… tap when you're done")):(ar?"اضغط وتحدث بشكل طبيعي. سأفهم وأنظم كل شيء.":"Tap and speak naturally. I'll understand and organize it."))));
     }
     if (V.state==="hearing" || V.state==="thinking"){
       out.push(h("div",{class:"rec-wrap",style:"padding-block:28px"},
         h("span",{class:"spinner",style:"width:44px;height:44px;border-width:4px;color:var(--accent)"}),
-        h("div",{style:"font-weight:600;font-family:var(--f-display);font-size:17px"},V.state==="hearing"?(ar?"أكتب ما قلته…":"Listening back…"):(ar?"أحلل ملاحظتك…":"Analyzing your note…")),
+        h("div",{style:"font-weight:600;font-family:var(--f-display);font-size:17px"},V.state==="hearing"?(ar?"ChatGPT يكتب ما قلته…":"ChatGPT is writing down what you said…"):(ar?`${AI===OAIX?"ChatGPT":"Claude"} يحلل ملاحظتك…`:`${AI===OAIX?"ChatGPT":"Claude"} is analyzing your note…`)),
         h("div",{class:"muted small"},ar?"أستخرج المهام والأولويات والمواعيد":"Finding tasks, priorities and deadlines")));
     }
     if (V.state==="done"){
@@ -1026,6 +1027,7 @@ function openVoice(){
           h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null))))));
       if (r.notes.length) out.push(h("div",{class:"small muted"},(ar?"ملاحظات محفوظة: ":"Notes saved: ")+r.notes.length));
       if (r.journal) out.push(h("div",{class:"small muted"},ar?"أضفت جزءاً إلى يومية اليوم.":"Added a line to today's journal."));
+      out.push(h("div",{class:"small muted"},ar?"الملاحظة الصوتية كاملة محفوظة في ملاحظات ← صوتيات"+(V.blob?" مع التسجيل.":"."):"The full voice note is saved under Notes → Voice"+(V.blob?", with the recording.":".")));
       if (!r.tasks.length && !r.notes.length && !r.journal) out.push(h("p",{class:"muted",style:"margin:0"},ar?"لم أجد مهام في هذه الملاحظة. حفظتها في الصوتيات.":"I didn't find any tasks in this note. It's saved under Voice."));
       out.push(said());
       out.push(h("div",{class:"row"},
