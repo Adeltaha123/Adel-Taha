@@ -63,6 +63,7 @@ h2{font-size:17px;font-weight:600}
 .small{font-size:13px}
 .banner{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--ink)}
 .btn{height:44px;padding-inline:16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+a.btn{color:var(--ink)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .btn.ghost{background:transparent}
 .btn.danger{color:var(--danger)}
@@ -193,6 +194,26 @@ nav.tabs .fab .disc svg{width:26px;height:26px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:360px){.matrix{grid-template-columns:1fr}}
 [dir="rtl"] .flip{transform:scaleX(-1)}
+/* calendar */
+.cal-group{display:flex;flex-direction:column;gap:8px}
+.cal-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cal-head h2{font-size:16px}
+.cal-head.late h2{color:var(--q1)}
+.cal-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;border-inline-start:4px solid var(--qc,var(--line))}
+.cal-time{flex:none;width:64px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.35}
+.cal-time small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted)}
+.cal-item .body{flex:1;min-width:0;cursor:pointer}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.mgrid .dow{font-size:11px;color:var(--muted);padding-block:4px}
+.mday{aspect-ratio:1/1;max-width:100%;border:1px solid transparent;border-radius:10px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-variant-numeric:tabular-nums;font-size:14px;padding:0}
+.mday.out{color:var(--muted);opacity:.45}
+.mday.today{border-color:var(--gold);font-weight:700}
+.mday[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.mday .dots{display:flex;gap:2px;height:5px}
+.mday .dots i{width:5px;height:5px;border-radius:50%;background:var(--qc)}
+.mday[aria-pressed="true"] .dots i{background:var(--on-accent)}
+.next-up{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--gold-soft);cursor:pointer}
+.next-up .tm{font-family:var(--f-mono);font-size:15px;color:var(--gold);font-weight:500}
 /* voice */
 .mic-hero{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--accent);color:var(--on-accent);border:0;text-align:start;width:100%}
 .mic-hero .disc{flex:none;width:54px;height:54px;border-radius:50%;background:color-mix(in srgb,var(--on-accent) 18%,transparent);display:grid;place-items:center}
@@ -228,7 +249,7 @@ audio{width:100%;height:40px}
     <button type="button" data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span data-t="tasks">Tasks</span></button>
     <button type="button" id="fabMic" class="fab" aria-label="Voice note"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></span></button>
     <button type="button" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span data-t="notes">Notes</span></button>
-    <button type="button" data-tab="habits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l4 4L17 6"/><path d="M13 16l1 1 7-7"/></svg><span data-t="habits">Habits</span></button>
+    <button type="button" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"/></svg><span data-t="calendar">Calendar</span></button>
   </div>
 </nav>
 
@@ -279,6 +300,11 @@ const T = {
   noVoice:"No voice notes yet. Tap the mic button below to record one.",play:"Play",saveVoice:"Save voice note",
   claudeKey:"Claude API key",claudeKeyHint:"From platform.claude.com/settings/keys. Stored only on this phone.",openaiKey:"OpenAI API key",model:"Model",speechLang:"Default voice language",
   backup:"Backup",exportB:"Export backup",importB:"Import backup",imported:"Backup restored",keysSaved:"Keys saved",
+  calendar:"Calendar",agenda:"Agenda",month:"Month",overdue:"Overdue",thisWeek:"Later this week",nextWeek:"Next week",later:"Later",allDay:"All day",time:"Time",reminder:"Reminder",
+  remNone:"No reminder",remAt:"At the time",remMorning:"Morning of (8:00)",rem10:"10 minutes before",rem30:"30 minutes before",rem60:"1 hour before",rem1d:"1 day before",addGcal:"Add to Google Calendar",
+  getRem:"Get reminders",getRemSub:"For reminders even when My PA is closed, add your tasks to your phone calendar. It alerts you, and Google Calendar can also email you.",exportIcs:"Add all upcoming to my calendar",
+  notifOn:"Turn on notifications",notifOnDone:"Notifications are on. They arrive while My PA is open or was used recently.",notifBlocked:"Notifications are blocked. Allow them for this site in Chrome settings.",
+  noDated:"tasks have no date",nothingCal:"Nothing scheduled. Tasks with a date appear here.",manage:"Manage",addHabitBtn:"Add a habit",nextUp:"Next up",
   privacy:"Everything is stored only on this device. Export a backup regularly. The lock screen protects the app if someone picks up your phone."},
  ar:{ask:"اسأل",today:"اليوم",tasks:"المهام",notes:"ملاحظات",habits:"العادات",capture:"تسجيل",
   goodMorning:"صباح الخير",goodAfternoon:"مساء الخير",goodEvening:"مساء الخير",
@@ -316,6 +342,11 @@ const T = {
   noVoice:"لا توجد ملاحظات صوتية بعد. اضغط زر الميكروفون بالأسفل.",play:"تشغيل",saveVoice:"احفظ الملاحظة الصوتية",
   claudeKey:"مفتاح Claude API",claudeKeyHint:"من platform.claude.com/settings/keys. يُحفظ على هذا الهاتف فقط.",openaiKey:"مفتاح OpenAI API",model:"النموذج",speechLang:"لغة الصوت الافتراضية",
   backup:"نسخة احتياطية",exportB:"تصدير نسخة احتياطية",importB:"استيراد نسخة احتياطية",imported:"تمت الاستعادة",keysSaved:"تم حفظ المفاتيح",
+  calendar:"التقويم",agenda:"الأجندة",month:"الشهر",overdue:"متأخر",thisWeek:"باقي الأسبوع",nextWeek:"الأسبوع القادم",later:"لاحقاً",allDay:"طوال اليوم",time:"الوقت",reminder:"التذكير",
+  remNone:"بدون تذكير",remAt:"في الموعد",remMorning:"صباح اليوم (٨:٠٠)",rem10:"قبل ١٠ دقائق",rem30:"قبل ٣٠ دقيقة",rem60:"قبل ساعة",rem1d:"قبل يوم",addGcal:"أضف إلى تقويم Google",
+  getRem:"احصل على التذكيرات",getRemSub:"لكي تصلك التذكيرات حتى وتطبيق My PA مغلق، أضف مهامك إلى تقويم هاتفك. سينبهك، ويمكن لتقويم Google أن يرسل لك بريداً أيضاً.",exportIcs:"أضف كل القادم إلى تقويمي",
+  notifOn:"فعّل الإشعارات",notifOnDone:"الإشعارات مفعّلة. تصلك أثناء فتح التطبيق أو بعد استخدامه بقليل.",notifBlocked:"الإشعارات ممنوعة. اسمح بها لهذا الموقع من إعدادات Chrome.",
+  noDated:"مهام بدون تاريخ",nothingCal:"لا يوجد شيء مجدول. المهام ذات التاريخ تظهر هنا.",manage:"إدارة",addHabitBtn:"أضف عادة",nextUp:"التالي",
   privacy:"كل البيانات محفوظة على هذا الجهاز فقط. صدّر نسخة احتياطية بانتظام. شاشة القفل تحمي التطبيق إذا أمسك أحد بهاتفك."}
 };
 let lang = "en";
@@ -537,8 +568,8 @@ const providerName = () => AI===OAIX ? "OpenAI" : "Claude";
 const isBilling = e => !!(e && /credit|quota|billing|insufficient|balance/i.test(e.message||""));
 const aiErrMsg = e => isBilling(e) ? (lang==="ar"?`حساب ${providerName()} ليس به رصيد. أضف رصيداً من صفحة الفوترة${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" في platform.claude.com"}، أو بدّل المحلل إلى ${providerName()==="OpenAI"?"Claude":"ChatGPT"} من الإعدادات.`:`Your ${providerName()} account has no credit left. Add credit on its billing page${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" in platform.claude.com"}, or switch "Who analyzes your notes" to ${providerName()==="OpenAI"?"Claude":"ChatGPT"} in Settings.`) : e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?`مفتاح ${providerName()} غير صحيح. راجعه في الإعدادات.`:`Your ${providerName()} API key was rejected. Check it in Settings.`) : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
 function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
-const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning. Speech recognition may repeat words or partial phrases (e.g. "عندنا عندنا بكره عندنا بكره ميتنج"); treat repeats as one mention. English business words are often written phonetically in Arabic script: ميتنج/ميتينج/ميتك = meeting, كول = call, ديدلاين = deadline, بريزنتيشن = presentation, إيميل = email, بروبوزال = proposal. A meeting with a time becomes one task titled like "Meeting with <name>" with that due date, and the time kept in the title (e.g. "at 10:00").`;
-function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
+const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning. Speech recognition may repeat words or partial phrases (e.g. "عندنا عندنا بكره عندنا بكره ميتنج"); treat repeats as one mention. English business words are often written phonetically in Arabic script: ميتنج/ميتينج/ميتك = meeting, كول = call, ديدلاين = deadline, بريزنتيشن = presentation, إيميل = email, بروبوزال = proposal. A meeting with a time becomes one task titled like "Meeting with <name>" with that due date and the clock time in the "time" field (24-hour, e.g. "10:00"; "الساعة ٣ العصر" = "15:00"). If a time is given without a day, assume today if it is still ahead, otherwise tomorrow.`;
+function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,time:x.time||undefined,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
 
 /* ---------- views ---------- */
 let TAB = "today";
@@ -549,13 +580,79 @@ const Q = [1,2,3,4];
 const qColor = q => `var(--q${q||2})`;
 
 function checkBtn(on, onclick, label){ return h("button",{type:"button",class:"check"+(on?" on":""),"aria-pressed":on?"true":"false","aria-label":label||t("done"),onclick:e=>{e.stopPropagation();onclick();}},svg("check")); }
-function dueChip(due){
-  if (!due) return null; const td=TODAY();
-  if (due < td) return h("span",{class:"chip late"},t("late")+" · "+fmtDate(due));
-  if (due === td) return h("span",{class:"chip today"},t("dueToday"));
-  if (due === addDays(td,1)) return h("span",{class:"chip"},t("tomorrow"));
-  return h("span",{class:"chip"},fmtDate(due));
+const normTime = v => { const m=String(v||"").trim().match(/^(\d{1,2})[:.](\d{2})/); if(!m) return null; const hh=+m[1], mm=+m[2]; return (hh>23||mm>59)?null:String(hh).padStart(2,"0")+":"+m[2]; };
+function fmtTime(tm){ if(!tm) return ""; const [a,b]=tm.split(":").map(Number); return new Date(2000,0,1,a,b).toLocaleTimeString(lang==="ar"?"ar-EG":"en-GB",{hour:"numeric",minute:"2-digit"}); }
+function dueChip(due, time){
+  if (!due) return null; const td=TODAY(); const tm = time ? " · "+fmtTime(time) : "";
+  if (due < td) return h("span",{class:"chip late"},t("late")+" · "+fmtDate(due)+tm);
+  if (due === td) return h("span",{class:"chip today"},t("dueToday")+tm);
+  if (due === addDays(td,1)) return h("span",{class:"chip"},t("tomorrow")+tm);
+  return h("span",{class:"chip"},fmtDate(due)+tm);
 }
+/* reminders: remind = minutes before (-1 none). Default 30 min for timed tasks, 8:00 on the day otherwise. */
+const remOf = x => x.remind==null ? (x.time?30:0) : x.remind;
+function remindAt(x){
+  if (!x.due || x.done) return null; const r=remOf(x); if (r===-1) return null;
+  const [y,mo,d]=x.due.split("-").map(Number);
+  if (x.time){ const [hh,mm]=x.time.split(":").map(Number); return new Date(y,mo-1,d,hh,mm).getTime()-r*60000; }
+  return new Date(y,mo-1,d,8,0).getTime()-(r===1440?86400000:0);
+}
+const TZ = (()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||"Africa/Cairo"; }catch(e){ return "Africa/Cairo"; } })();
+const compact = k => k.replace(/-/g,"");
+function endOf(x){ const [y,mo,d]=x.due.split("-").map(Number); const [hh,mm]=x.time.split(":").map(Number); const e=new Date(y,mo-1,d,hh+1,mm); const z=n=>String(n).padStart(2,"0"); return compact(dkey(e))+"T"+z(e.getHours())+z(e.getMinutes())+"00"; }
+function taskDetails(x){ return [x.delegate?("Delegate: "+x.delegate):"",...(x.items||[]).map(i=>"- "+i.t),"Added from My PA"].filter(Boolean).join("\n"); }
+function gcalUrl(x){
+  const p=new URLSearchParams({action:"TEMPLATE",text:x.title,details:taskDetails(x)});
+  if (x.time){ p.set("dates",compact(x.due)+"T"+x.time.replace(":","")+"00/"+endOf(x)); p.set("ctz",TZ); }
+  else p.set("dates",compact(x.due)+"/"+compact(addDays(x.due,1)));
+  return "https://calendar.google.com/calendar/render?"+p.toString();
+}
+function icsText(list){
+  const esc=v=>String(v).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//My PA//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:My PA"];
+  for (const x of list){
+    L.push("BEGIN:VEVENT","UID:"+x.id+"@my-pa","DTSTAMP:"+stamp,"SUMMARY:"+esc(x.title),"DESCRIPTION:"+esc(taskDetails(x)));
+    if (x.time) L.push("DTSTART:"+compact(x.due)+"T"+x.time.replace(":","")+"00","DTEND:"+endOf(x));
+    else L.push("DTSTART;VALUE=DATE:"+compact(x.due),"DTEND;VALUE=DATE:"+compact(addDays(x.due,1)));
+    const r=remOf(x);
+    if (r!==-1) L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+esc(x.title),"TRIGGER:"+(x.time?"-PT"+r+"M":(r===1440?"-PT16H":"PT8H")),"END:VALARM");
+    L.push("END:VEVENT");
+  }
+  L.push("END:VCALENDAR"); return L.join("\r\n");
+}
+function exportIcs(){
+  const list=all("task").filter(x=>!x.done&&x.due&&x.due>=TODAY()).sort((a,b)=>(a.due+(a.time||"")).localeCompare(b.due+(b.time||"")));
+  if (!list.length) return toast(t("nothingCal"));
+  const a=h("a",{href:URL.createObjectURL(new Blob([icsText(list)],{type:"text/calendar"})),download:"my-pa-calendar.ics"}); document.body.append(a); a.click(); a.remove();
+  toast(lang==="ar"?`تم تجهيز ${list.length} موعد. افتح الملف واختر التقويم.`:`${list.length} items ready. Open the file and choose your Calendar app.`);
+}
+/* in-app notifications */
+const NOTI={timers:[],deb:null};
+function notifiedSet(){ try{ return new Set(JSON.parse(localStorage.getItem("mk_notified")||"[]")); }catch(e){ return new Set(); } }
+function markNotified(k){ const st=notifiedSet(); st.add(k); try{ localStorage.setItem("mk_notified",JSON.stringify([...st].slice(-400))); }catch(e){} }
+function scheduleReminders(){
+  clearTimeout(NOTI.deb);
+  NOTI.deb=setTimeout(()=>{
+    NOTI.timers.forEach(clearTimeout); NOTI.timers=[]; if(!LOCK.unlocked) return;
+    const now=Date.now(), seen=notifiedSet();
+    for (const x of all("task")){ const at=remindAt(x); if(at==null) continue; const key=x.id+"@"+at; if(seen.has(key)) continue;
+      if (at<=now){ if (now-at<6*3600e3) fireReminder(x,key); continue; }
+      if (at-now<24*3600e3) NOTI.timers.push(setTimeout(()=>fireReminder(x,key),at-now)); }
+  },300);
+}
+async function fireReminder(x,key){
+  markNotified(key);
+  const body=(x.due===TODAY()?t("dueToday"):fmtDate(x.due))+(x.time?" · "+fmtTime(x.time):"");
+  toast("⏰ "+x.title+" · "+body);
+  try{ if ("Notification" in window && Notification.permission==="granted"){ const reg=navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await reg.showNotification(x.title,{body,tag:x.id,icon:"icon-192.png",badge:"icon-192.png",vibrate:[200,100,200]}); else new Notification(x.title,{body}); } }catch(e){}
+}
+async function enableNotifications(){
+  if (!("Notification" in window)) return toast(t("notifBlocked"));
+  const r = await Notification.requestPermission();
+  toast(r==="granted"?t("notifOnDone"):t("notifBlocked")); scheduleReminders(); render();
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) scheduleReminders(); });
 function toggleTask(x){ patch(x.id,{done:!x.done,doneAt:!x.done?Date.now():null, top: x.done ? x.top : false}); }
 function taskRow(x){
   const items = x.items||[]; const dn = items.filter(i=>i.done).length;
@@ -566,7 +663,7 @@ function taskRow(x){
       h("div",{class:"meta"},
         x.top && !x.done ? h("span",{class:"chip star"},"★ Top 3") : null,
         h("span",{class:"chip"},t("q"+(x.q||2))),
-        dueChip(!x.done && x.due),
+        dueChip(!x.done && x.due, x.time),
         items.length ? h("span",{class:"chip"},`☑ ${dn}/${items.length}`) : null,
         x.delegate ? h("span",{class:"chip",dir:"auto"},"→ "+x.delegate) : null,
         x.example ? h("span",{class:"chip"},t("example")) : null)));
@@ -602,10 +699,14 @@ function viewToday(){
       (p.tips||[]).length ? h("ul",{class:"small muted",style:"margin:0;padding-inline-start:18px",dir:"auto"},p.tips.map(s=>h("li",null,s))) : null,
       (p.top3||[]).length ? h("button",{type:"button",class:"btn primary",onclick:applyPlan},t("setTop3")) : null));
   }
+  const nowKey=TODAY()+"T"+new Date().toTimeString().slice(0,5);
+  const nxt=all("task").filter(x=>!x.done&&x.due&&x.time&&(x.due+"T"+x.time)>=nowKey&&x.due<=addDays(td,1)).sort(byWhen)[0];
+  if (nxt) out.push(h("div",{class:"next-up",onclick:()=>openTask(nxt.id)},h("span",{class:"tm"},fmtTime(nxt.time)),h("div",{class:"grow"},h("div",{class:"eyebrow"},t("nextUp")+(nxt.due!==td?" · "+t("tomorrow"):"")),h("div",{style:"font-weight:600",dir:"auto"},nxt.title))));
   out.push(h("div",{class:"section"},h("div",{class:"section-head"},h("h2",null,t("dueSoon")),h("span",{class:"small muted"},String(due.length))),
     due.length ? due.map(taskRow) : h("p",{class:"muted small",style:"margin:0"},t("nothingDue"))));
+  out.push(h("div",{class:"section"},h("div",{class:"section-head"},h("h2",null,t("habitsToday")),h("button",{type:"button",class:"btn ghost",style:"height:32px;font-size:13px",onclick:()=>go("habits")},habits.length?t("manage"):t("addHabitBtn")))));
   if (habits.length){
-    out.push(h("div",{class:"section"},h("h2",null,t("habitsToday")),
+    out.push(h("div",{class:"section"},
       h("div",{class:"row"},habits.map(x=>{ const on=!!(x.log||{})[td];
         return h("button",{type:"button",class:"btn"+(on?" primary":""),style:"height:38px;font-size:13px",onclick:()=>toggleHabit(x,td)},on?svg("check"):null,h("span",{dir:"auto"},x.name)); }))));
   }
@@ -684,11 +785,18 @@ function openTask(id){
       title,
       h("div",{class:"section"},h("span",{class:"eyebrow"},t("priority")),
         h("div",{class:"qpick"},Q.map(q=>h("button",{type:"button",style:`--qc:${qColor(q)}`,"aria-pressed":(x.q||2)===q?"true":"false",onclick:()=>patch(id,{q}).then(refreshSheet)},h("b",null,t("q"+q)),t("q"+q+"h"))))),
-      h("div",{class:"row",style:"align-items:flex-end"},
+      h("div",{class:"row",style:"align-items:flex-end;flex-wrap:nowrap"},
         h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("due")),
-          h("input",{type:"date",class:"field",id:"tDue",value:x.due||"",onchange:e=>patch(id,{due:e.target.value||null})})),
+          h("input",{type:"date",class:"field",id:"tDue",value:x.due||"",onchange:e=>patch(id,{due:e.target.value||null}).then(refreshSheet)})),
+        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("time")),
+          h("input",{type:"time",class:"field",id:"tTime",value:x.time||"",onchange:e=>patch(id,{time:normTime(e.target.value)}).then(refreshSheet)}))),
+      h("div",{class:"row",style:"align-items:flex-end;flex-wrap:nowrap"},
+        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("reminder")),
+          h("select",{class:"field",id:"tRem",disabled:!x.due,onchange:e=>patch(id,{remind:+e.target.value})},
+            [[-1,"remNone"],[0,"remAt"],[10,"rem10"],[30,"rem30"],[60,"rem60"],[1440,"rem1d"]].filter(([v])=>x.time||[-1,0,1440].includes(v)).map(([v,k])=>h("option",{value:String(v),selected:remOf(x)===v},t(k==="remAt"&&!x.time?"remMorning":k))))),
         h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("delegateTo")),
           h("input",{class:"field",id:"tDel",dir:"auto",value:x.delegate||"",onchange:e=>patch(id,{delegate:e.target.value.trim()||null})}))),
+      x.due ? h("a",{class:"btn",href:gcalUrl(x),target:"_blank",rel:"noopener",style:"text-decoration:none"},h("span",{html:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M12 13v5M9.5 15.5h5"/></svg>',style:"display:contents"}),t("addGcal")) : null,
       h("div",{class:"section"},
         h("div",{class:"section-head"},h("span",{class:"eyebrow"},t("checklist")),items.length?h("span",{class:"small muted",style:"font-variant-numeric:tabular-nums"},`${dn} ${t("of")} ${items.length}`):null),
         items.length?h("div",{class:"progress"},h("i",{style:`width:${Math.round(dn/items.length*100)}%`})):null,
@@ -725,7 +833,7 @@ function viewCapture(){
       r.tasks.map((x,i)=>h("div",{class:"result",style:`--qc:${qColor(x.quadrant)}`},
         checkBtn(x.sel,()=>{x.sel=!x.sel;render();}),
         h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),
-          h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null),
+          h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due,x.time),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null),
           x.reason?h("div",{class:"why",dir:"auto"},x.reason):null))),
       r.notes.map(n=>h("div",{class:"result"},checkBtn(n.sel,()=>{n.sel=!n.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("noteKind")),h("div",{dir:"auto",style:"margin-top:4px"},n.text)))),
       r.journal?h("div",{class:"result"},checkBtn(r.journal.sel,()=>{r.journal.sel=!r.journal.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("journalKind")),h("div",{dir:"auto",style:"margin-top:4px"},r.journal.text))):null,
@@ -737,24 +845,24 @@ async function organize(text, opt={}){
   const ask = p => AI.json(p).catch(e=>{ const other = AI===OAIX ? (CFG.claudeKey?AIX:null) : (CFG.openaiKey?OAIX:null); if (isBilling(e) && other) return other.json(p); throw e; });
   const res = await ask(`You are the executive assistant of a CEO in Egypt. ${ctxLine()}
 ${LANG_RULE}
-${opt.import?`The text below is copied from another assistant or chat (for example a Meta AI conversation on WhatsApp, possibly a WhatsApp chat export with dates and sender names), or a list the CEO kept. Extract every meeting, appointment, schedule, task and reminder that is still upcoming or open. Skip anything clearly in the past (before ${TODAY()}) or marked done, skip the assistant's own small talk, and merge duplicates that appear more than once. For a meeting or reminder, keep its time in the title (e.g. "Meeting with Mohamed Ragab at 10:00"). For a recurring item (e.g. every Sunday), title it with the repetition and set the due date to the next occurrence. Keep useful background facts as notes.
+${opt.import?`The text below is copied from another assistant or chat (for example a Meta AI conversation on WhatsApp, possibly a WhatsApp chat export with dates and sender names), or a list the CEO kept. Extract every meeting, appointment, schedule, task and reminder that is still upcoming or open. Skip anything clearly in the past (before ${TODAY()}) or marked done, skip the assistant's own small talk, and merge duplicates that appear more than once. For a meeting or reminder, put its clock time in "time" (e.g. title "Meeting with Mohamed Ragab", time "10:00"). For a recurring item (e.g. every Sunday), title it with the repetition and set the due date to the next occurrence. Keep useful background facts as notes.
 `:""}Organize the message below. Be brief: short task titles, no filler. Write every task title, checklist step, note and summary in ${lang==="ar"?"Arabic script (convert Franco into proper Arabic; keep English names and brand terms as they are)":"clear English"}.
 Prioritize each task with the Eisenhower matrix: 1 = urgent and important (deadlines today or tomorrow, money, legal, clients, people crises), 2 = important not urgent (strategy, hiring, planning, health, relationships), 3 = urgent not important (routine requests someone else can handle; name a delegate if the message mentions one), 4 = neither.
 Resolve relative dates to YYYY-MM-DD. Split a task with several steps into a checklist. Merge repeated mentions of the same thing into one task. Ignore greetings, filler words and false starts.
 Message:
 """${text}"""
 Reply with only JSON:
-{"language":"english|arabic|franco|mixed","summary":"one short sentence","tasks":[{"title":"short imperative","quadrant":1,"due":"YYYY-MM-DD or null","checklist":["step"],"delegateTo":"name or null","reason":"why this quadrant, under 12 words"}],"notes":["information worth keeping that is not a task"],"journal":"personal reflection or feelings in the message, or null"}`);
+{"language":"english|arabic|franco|mixed","summary":"one short sentence","tasks":[{"title":"short imperative","quadrant":1,"due":"YYYY-MM-DD or null","time":"HH:MM 24-hour or null","checklist":["step"],"delegateTo":"name or null","reason":"why this quadrant, under 12 words"}],"notes":["information worth keeping that is not a task"],"journal":"personal reflection or feelings in the message, or null"}`);
   return {
     language:String(res.language||""), summary:String(res.summary||""),
-    tasks:(Array.isArray(res.tasks)?res.tasks:[]).map(x=>({title:String(x.title||"").trim(),quadrant:[1,2,3,4].includes(+x.quadrant)?+x.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:null,checklist:(Array.isArray(x.checklist)?x.checklist:[]).map(String).filter(Boolean),delegateTo:x.delegateTo&&x.delegateTo!=="null"?String(x.delegateTo):null,reason:String(x.reason||""),sel:true})).filter(x=>x.title),
+    tasks:(Array.isArray(res.tasks)?res.tasks:[]).map(x=>({title:String(x.title||"").trim(),quadrant:[1,2,3,4].includes(+x.quadrant)?+x.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:null,time:normTime(x.time),checklist:(Array.isArray(x.checklist)?x.checklist:[]).map(String).filter(Boolean),delegateTo:x.delegateTo&&x.delegateTo!=="null"?String(x.delegateTo):null,reason:String(x.reason||""),sel:true})).filter(x=>x.title),
     notes:(Array.isArray(res.notes)?res.notes:[]).map(s=>({text:String(s),sel:true})).filter(n=>n.text.trim()),
     journal:res.journal && res.journal!=="null" ? {text:String(res.journal),sel:true} : null };
 }
 /* Saves the selected parts of an organized result. Returns an undo function. */
 async function addOrganized(r, source){
   const made=[]; let journalUndo=null; let n=0; const now=Date.now();
-  for (const x of r.tasks.filter(x=>x.sel)){ const id=uid("task"); made.push(id); await put(id,{kind:"task",title:x.title,q:x.quadrant,due:x.due,done:false,delegate:x.delegateTo,items:x.checklist.map(s=>({t:s,done:false})),source:String(source||"").slice(0,500),created:now+n++}); }
+  for (const x of r.tasks.filter(x=>x.sel)){ const id=uid("task"); made.push(id); await put(id,{kind:"task",title:x.title,q:x.quadrant,due:x.due,time:x.due?x.time:null,done:false,delegate:x.delegateTo,items:x.checklist.map(s=>({t:s,done:false})),source:String(source||"").slice(0,500),created:now+n++}); }
   for (const x of r.notes.filter(x=>x.sel)){ const id=uid("note"); made.push(id); await put(id,{kind:"note",type:"note",text:x.text,created:now+n++}); }
   if (r.journal && r.journal.sel){
     const td=TODAY(); const ex=all("note").find(j=>j.type==="journal"&&j.day===td);
@@ -776,6 +884,78 @@ async function addCaptured(){
   const r = UI.capResult; if (!r) return;
   const res = await addOrganized(r, UI.capText);
   UI.capResult=null; UI.capText=""; rememberUI(); toast(`${t("added")}: ${res.count}`); go("tasks");
+}
+
+/* calendar */
+function calItem(x, showDay){
+  const ar=lang==="ar";
+  return h("div",{class:"cal-item",style:`--qc:${qColor(x.q)}`},
+    h("div",{class:"cal-time"}, showDay?h("small",null,fmtDate(x.due,{weekday:"short",day:"numeric",month:"short"})):null, x.time?fmtTime(x.time):h("span",{class:"muted"},t("allDay"))),
+    h("div",{class:"body",onclick:()=>openTask(x.id)},
+      h("div",{class:"title",dir:"auto",style:"font-weight:500;overflow-wrap:anywhere"},x.title),
+      h("div",{class:"meta"},h("span",{class:"chip"},t("q"+(x.q||2))),x.delegate?h("span",{class:"chip",dir:"auto"},"→ "+x.delegate):null,(x.items||[]).length?h("span",{class:"chip"},`☑ ${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`):null,remindAt(x)!=null&&x.time?h("span",{class:"chip"},"⏰ "+(remOf(x)?(remOf(x)>=60?(remOf(x)/60)+(ar?" س":"h"):remOf(x)+(ar?" د":"m")):(ar?"في الموعد":"on time"))):null)),
+    checkBtn(false,()=>toggleTask(x)));
+}
+const byWhen=(a,b)=>(a.due+(a.time||"99")).localeCompare(b.due+(b.time||"99"))||((a.q||2)-(b.q||2));
+function remindersCard(){
+  const perm = ("Notification" in window) ? Notification.permission : "denied";
+  return h("details",{class:"card",open:perm!=="granted"},
+    h("summary",{style:"cursor:pointer;font-weight:600"},"⏰ "+t("getRem")),
+    h("div",{class:"stack",style:"gap:10px;margin-top:10px"},
+      h("p",{class:"small muted",style:"margin:0"},t("getRemSub")),
+      h("button",{type:"button",class:"btn primary",onclick:exportIcs},t("exportIcs")),
+      perm==="granted" ? h("p",{class:"small muted",style:"margin:0"},"✓ "+t("notifOnDone"))
+        : perm==="denied" ? h("p",{class:"small muted",style:"margin:0"},t("notifBlocked"))
+        : h("button",{type:"button",class:"btn",onclick:enableNotifications},t("notifOn"))));
+}
+function viewCalendar(){
+  const ar=lang==="ar", td=TODAY(), out=[];
+  out.push(h("h1",null,t("calendar")));
+  out.push(remindersCard());
+  out.push(h("div",{class:"seg",role:"group"},["agenda","month"].map(m=>h("button",{type:"button","aria-pressed":(UI.calMode||"agenda")===m?"true":"false",onclick:()=>{UI.calMode=m;render();}},t(m)))));
+  const open=all("task").filter(x=>!x.done && x.due).sort(byWhen);
+  const undated=all("task").filter(x=>!x.done && !x.due).length;
+  if ((UI.calMode||"agenda")==="agenda"){
+    const dow=new Date().getDay(), weekEnd=addDays(td,6-dow), nextEnd=addDays(weekEnd,7), tm=addDays(td,1);
+    const groups=[
+      ["overdue", x=>x.due<td, true, ""],
+      ["dueToday", x=>x.due===td, false, fmtDate(td,{weekday:"long",day:"numeric",month:"short"})],
+      ["tomorrow", x=>x.due===tm, false, fmtDate(tm,{weekday:"long",day:"numeric",month:"short"})],
+      ["thisWeek", x=>x.due>tm && x.due<=weekEnd, true, ""],
+      ["nextWeek", x=>x.due>weekEnd && x.due<=nextEnd, true, fmtDate(addDays(weekEnd,1))+" – "+fmtDate(nextEnd)],
+      ["later", x=>x.due>nextEnd, true, ""]];
+    let any=false;
+    for (const [k,fn,showDay,sub] of groups){
+      const list=open.filter(fn); if(!list.length && !["dueToday","tomorrow"].includes(k)) continue; any = any || list.length>0;
+      out.push(h("div",{class:"cal-group"},
+        h("div",{class:"cal-head"+(k==="overdue"?" late":"")},h("h2",null,t(k)),h("span",{class:"small muted"},sub||String(list.length))),
+        list.length ? list.map(x=>calItem(x,showDay)) : h("p",{class:"small muted",style:"margin:0"},"—")));
+    }
+    if (!any) out.push(h("p",{class:"muted"},t("nothingCal")));
+  } else {
+    const base = UI.calMonth || td.slice(0,7);
+    const [y,m]=base.split("-").map(Number);
+    const first=new Date(y,m-1,1), startKey=addDays(dkey(first),-first.getDay());
+    const sel = UI.calDay || td;
+    const byDay={}; for(const x of open){ (byDay[x.due]=byDay[x.due]||[]).push(x); }
+    const shift=n=>{ const d=new Date(y,m-1+n,1); UI.calMonth=dkey(d).slice(0,7); render(); };
+    out.push(h("div",{class:"row",style:"justify-content:space-between;flex-wrap:nowrap"},
+      h("button",{type:"button",class:"iconbtn","aria-label":"Previous month",onclick:()=>shift(-1)},svg("back")),
+      h("h2",null,first.toLocaleDateString(ar?"ar-EG":"en-GB",{month:"long",year:"numeric"})),
+      h("button",{type:"button",class:"iconbtn","aria-label":"Next month",onclick:()=>shift(1)},h("span",{style:"display:grid;transform:scaleX(-1)"},svg("back")))));
+    const grid=h("div",{class:"mgrid"});
+    for(let i=0;i<7;i++) grid.append(h("div",{class:"dow"},new Date(2026,9,25+i).toLocaleDateString(ar?"ar-EG":"en-GB",{weekday:"narrow"})));
+    for(let i=0;i<42;i++){ const k=addDays(startKey,i); const items=byDay[k]||[];
+      grid.append(h("button",{type:"button",class:"mday"+(k.slice(0,7)!==base?" out":"")+(k===td?" today":""),"aria-pressed":k===sel?"true":"false","aria-label":fmtDate(k,{weekday:"long",day:"numeric",month:"long"}),onclick:()=>{UI.calDay=k;render();}},
+        h("span",null,new Date(...k.split("-").map((v,j)=>j===1?v-1:+v)).toLocaleDateString(ar?"ar-EG":"en-GB",{day:"numeric"})),
+        h("span",{class:"dots"},items.slice(0,3).map(x=>h("i",{style:`--qc:${qColor(x.q)}`}))))); }
+    out.push(grid);
+    const dayList=(byDay[sel]||[]);
+    out.push(h("div",{class:"cal-group"},h("div",{class:"cal-head"},h("h2",null,fmtDate(sel,{weekday:"long",day:"numeric",month:"long"})),h("span",{class:"small muted"},String(dayList.length))),
+      dayList.length?dayList.map(x=>calItem(x,false)):h("p",{class:"small muted",style:"margin:0"},"—")));
+  }
+  if (undated) out.push(h("button",{type:"button",class:"btn ghost",style:"align-self:flex-start",onclick:()=>go("tasks")},(lang==="ar"?`${undated} ${t("noDated")} →`:`${undated} task${undated===1?" has":"s have"} no date →`)));
+  return out;
 }
 
 /* import from Meta AI / WhatsApp / any text */
@@ -836,7 +1016,7 @@ function streakOf(x){ const log=x.log||{}; let k=TODAY(); if(!log[k]) k=addDays(
 function toggleHabit(x,day){ const log={...(x.log||{})}; if(log[day]) delete log[day]; else log[day]=true; patch(x.id,{log}); }
 function viewHabits(){
   const out=[]; const td=TODAY(); const days=[...Array(7)].map((_,i)=>addDays(td,i-6));
-  out.push(h("h1",null,t("habitsT")));
+  out.push(h("div",{class:"row"},h("button",{type:"button",class:"iconbtn","aria-label":"Back",onclick:()=>go("today")},svg("back")),h("h1",{class:"grow"},t("habitsT"))));
   const hs=all("habit").sort((a,b)=>(a.created||0)-(b.created||0));
   if(!hs.length) out.push(h("p",{class:"muted"},t("noHabits")));
   for (const x of hs){
@@ -875,13 +1055,13 @@ async function sendChat(text){
 ${LANG_RULE}
 Always reply in the same language and script the CEO used in their latest message: English → English, Arabic → Arabic, Franco → Franco. Be concise, warm and decisive, like a seasoned chief of staff. Use short paragraphs or brief lists; no markdown headings.
 You can manage the CEO's task list with the tools. Use add_task when they ask you to add, remember or schedule something, and complete_task when they say something is done. Confirm briefly what you changed.
-Current open tasks (quadrant 1 do now, 2 schedule, 3 delegate, 4 drop): ${JSON.stringify(taskBrief())}
+Use the time field for meetings and appointments. Current open tasks (quadrant 1 do now, 2 schedule, 3 delegate, 4 drop): ${JSON.stringify(taskBrief())}
 Habits: ${JSON.stringify(all("habit").map(x=>({name:x.name,doneToday:!!(x.log||{})[TODAY()],streak:streakOf(x)})))}`;
   const history=UI.chat.slice(0,-1).filter(m=>m.role!=="tool").slice(-12).map(m=>({role:m.role==="me"?"user":"assistant",content:m.text||"…"})).filter(m=>m.content);
   while(history.length && history[0].role!=="user") history.shift();
   const tools=[
-    {name:"add_task",description:"Add a task to the CEO's list.",inputSchema:{type:"object",properties:{title:{type:"string"},quadrant:{type:"integer",enum:[1,2,3,4]},due:{type:"string",description:"YYYY-MM-DD or empty"},checklist:{type:"array",items:{type:"string"}},delegateTo:{type:"string"}},required:["title","quadrant"]},
-      execute:async i=>{ const id=uid("task"); await put(id,{kind:"task",title:String(i.title),q:[1,2,3,4].includes(+i.quadrant)?+i.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(i.due||"")?i.due:null,delegate:i.delegateTo||null,items:(i.checklist||[]).map(s=>({t:String(s),done:false})),done:false,created:Date.now()}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"＋ "+i.title}); render(); return {ok:true,id}; }},
+    {name:"add_task",description:"Add a task to the CEO's list.",inputSchema:{type:"object",properties:{title:{type:"string"},quadrant:{type:"integer",enum:[1,2,3,4]},due:{type:"string",description:"YYYY-MM-DD or empty"},time:{type:"string",description:"HH:MM 24-hour or empty"},checklist:{type:"array",items:{type:"string"}},delegateTo:{type:"string"}},required:["title","quadrant"]},
+      execute:async i=>{ const id=uid("task"); await put(id,{kind:"task",title:String(i.title),q:[1,2,3,4].includes(+i.quadrant)?+i.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(i.due||"")?i.due:null,time:normTime(i.time),delegate:i.delegateTo||null,items:(i.checklist||[]).map(s=>({t:String(s),done:false})),done:false,created:Date.now()}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"＋ "+i.title}); render(); return {ok:true,id}; }},
     {name:"complete_task",description:"Mark one of the CEO's open tasks as done, by id.",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},
       execute:async i=>{ const x=S.items.get(i.id); if(!x||x.kind!=="task") throw new Error("No task with that id"); await patch(x.id,{done:true,doneAt:Date.now(),top:false}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"✓ "+x.title}); render(); return {ok:true}; }}
   ];
@@ -1061,7 +1241,7 @@ function openVoice(){
         r.summary?h("div",{class:"muted",dir:"auto"},r.summary):null));
       if (r.tasks.length) out.push(h("div",{class:"stack",style:"gap:8px"},r.tasks.map(x=>h("div",{class:"result",style:`--qc:${qColor(x.quadrant)}`},
         h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),
-          h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null))))));
+          h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due,x.time),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null))))));
       if (r.notes.length) out.push(h("div",{class:"small muted"},(ar?"ملاحظات محفوظة: ":"Notes saved: ")+r.notes.length));
       if (r.journal) out.push(h("div",{class:"small muted"},ar?"أضفت جزءاً إلى يومية اليوم.":"Added a line to today's journal."));
       out.push(h("div",{class:"small muted"},ar?"الملاحظة الصوتية كاملة محفوظة في ملاحظات ← صوتيات"+(V.blob?" مع التسجيل.":"."):"The full voice note is saved under Notes → Voice"+(V.blob?", with the recording.":".")));
@@ -1105,11 +1285,11 @@ function voiceCard(v){
 async function loadSample(){
   const td=TODAY(), now=Date.now(); const ar=lang==="ar";
   const rows=[
-    {kind:"task",title:ar?"مراجعة التدفق النقدي للربع الرابع مع المدير المالي":"Review Q4 cash-flow forecast with the CFO",q:1,due:td,top:true,items:[{t:ar?"طلب الأرقام المحدثة":"Request updated numbers",done:true},{t:ar?"مراجعة سيناريو سعر الصرف":"Check FX scenario",done:false},{t:ar?"اعتماد الخطة":"Sign off",done:false}]},
+    {kind:"task",title:ar?"مراجعة التدفق النقدي للربع الرابع مع المدير المالي":"Review Q4 cash-flow forecast with the CFO",q:1,due:td,time:"11:00",top:true,items:[{t:ar?"طلب الأرقام المحدثة":"Request updated numbers",done:true},{t:ar?"مراجعة سيناريو سعر الصرف":"Check FX scenario",done:false},{t:ar?"اعتماد الخطة":"Sign off",done:false}]},
     {kind:"task",title:ar?"الرد على عرض البنك بخصوص التمويل":"Reply to the bank's financing offer",q:1,due:addDays(td,-1),top:true,items:[]},
-    {kind:"task",title:ar?"تجهيز عرض مجلس الإدارة":"Prepare the board meeting deck",q:2,due:addDays(td,4),top:true,items:[{t:ar?"ملخص الأداء":"Performance summary",done:false},{t:ar?"خطة ٢٠٢٧":"2027 plan",done:false}]},
-    {kind:"task",title:ar?"مقابلة مرشح مدير المبيعات":"Interview the sales director candidate",q:2,due:addDays(td,2),items:[]},
-    {kind:"task",title:ar?"تأكيد حجز فندق مؤتمر دبي":"Confirm hotel for the Dubai conference",q:3,due:addDays(td,1),delegate:ar?"منى":"Mona",items:[]},
+    {kind:"task",title:ar?"تجهيز عرض مجلس الإدارة":"Prepare the board meeting deck",q:2,due:addDays(td,8),top:true,items:[{t:ar?"ملخص الأداء":"Performance summary",done:false},{t:ar?"خطة ٢٠٢٧":"2027 plan",done:false}]},
+    {kind:"task",title:ar?"مقابلة مرشح مدير المبيعات":"Interview the sales director candidate",q:2,due:addDays(td,2),time:"13:30",items:[]},
+    {kind:"task",title:ar?"تأكيد حجز فندق مؤتمر دبي":"Confirm hotel for the Dubai conference",q:3,due:addDays(td,1),time:"09:00",delegate:ar?"منى":"Mona",items:[]},
     {kind:"task",title:ar?"تحديث صورة الملف على لينكدإن":"Update LinkedIn profile photo",q:4,items:[]},
     {kind:"note",type:"note",text:ar?"فكرة: برنامج ولاء لكبار العملاء يبدأ في يناير.":"Idea: loyalty program for top-20 accounts, launch in January."},
     {kind:"habit",name:ar?"مشي ٣٠ دقيقة":"30-min walk",log:{[addDays(td,-1)]:true,[addDays(td,-2)]:true,[addDays(td,-4)]:true}},
@@ -1123,12 +1303,13 @@ async function loadSample(){
 function go(tab){ TAB=tab; if(tab!=="ask") rememberUI(); window.scrollTo({top:0}); render(); }
 function render(){
   if (!S.ready) return;
-  const views={today:viewToday,tasks:viewTasks,capture:viewCapture,notes:viewNotes,habits:viewHabits,ask:viewAsk};
+  const views={calendar:viewCalendar,today:viewToday,tasks:viewTasks,capture:viewCapture,notes:viewNotes,habits:viewHabits,ask:viewAsk};
   const active=document.activeElement; const aid=active&&active.id; const sel=aid&&("selectionStart" in active)?[active.selectionStart,active.selectionEnd]:null;
   const keep = aid ? active.value : null;
   $("#view").replaceChildren(...(views[TAB]||viewToday)());
   if (aid){ const n=document.getElementById(aid); if(n && !n.closest(".sheet")){ if(keep!=null && n.value!==keep && aid!=="capText") n.value=keep; n.focus({preventScroll:true}); if(sel) try{n.setSelectionRange(sel[0],sel[1]);}catch(e){} } }
   document.querySelectorAll("nav.tabs [data-tab]").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===TAB?"page":"false"));
+  scheduleReminders();
   if (sheetEl && !document.activeElement.closest?.(".sheet")) refreshSheet();
 }
 document.querySelectorAll("nav.tabs [data-tab]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.tab)));

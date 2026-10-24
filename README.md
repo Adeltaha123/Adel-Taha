@@ -5,6 +5,7 @@ A private, phone-first executive assistant for a CEO.
 - **Voice notes:** tap the mic, speak in Egyptian Arabic or English, and watch the text appear live. With an OpenAI key you can switch to Whisper, which also keeps the audio and handles Arabic and English mixed in one sentence.
 - **AI organizing:** a voice note or typed note in Arabic, English or Franco becomes prioritized tasks, checklists, delegations, notes and journal entries.
 - **Priority matrix:** Do now / Schedule / Delegate / Drop, plus a daily Top 3 and a "Plan my day" briefing.
+- **Calendar** with Today, Tomorrow, this week, next week and a month view. Tasks can have a time and a reminder, and go into your phone calendar (Google or Samsung) with alerts.
 - **Checklists** inside every task, **notes**, a **journal**, and **habits** with streaks.
 - **Assistant chat** that answers in the language you write in, and can add or complete tasks.
 - **Lock screen:** fingerprint or Face ID where the phone supports it, with a 4-digit PIN as backup.
