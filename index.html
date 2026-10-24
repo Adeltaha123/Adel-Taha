@@ -517,9 +517,10 @@ function pickAI(){
 }
 let AI = pickAI();
 const providerName = () => AI===OAIX ? "OpenAI" : "Claude";
-const aiErrMsg = e => e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?`مفتاح ${providerName()} غير صحيح. راجعه في الإعدادات.`:`Your ${providerName()} API key was rejected. Check it in Settings.`) : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
+const isBilling = e => !!(e && /credit|quota|billing|insufficient|balance/i.test(e.message||""));
+const aiErrMsg = e => isBilling(e) ? (lang==="ar"?`حساب ${providerName()} ليس به رصيد. أضف رصيداً من صفحة الفوترة${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" في platform.claude.com"}، أو بدّل المحلل إلى ${providerName()==="OpenAI"?"Claude":"ChatGPT"} من الإعدادات.`:`Your ${providerName()} account has no credit left. Add credit on its billing page${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" in platform.claude.com"}, or switch "Who analyzes your notes" to ${providerName()==="OpenAI"?"Claude":"ChatGPT"} in Settings.`) : e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?`مفتاح ${providerName()} غير صحيح. راجعه في الإعدادات.`:`Your ${providerName()} API key was rejected. Check it in Settings.`) : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
 function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
-const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning.`;
+const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning. Speech recognition may repeat words or partial phrases (e.g. "عندنا عندنا بكره عندنا بكره ميتنج"); treat repeats as one mention. English business words are often written phonetically in Arabic script: ميتنج/ميتينج/ميتك = meeting, كول = call, ديدلاين = deadline, بريزنتيشن = presentation, إيميل = email, بروبوزال = proposal. A meeting with a time becomes one task titled like "Meeting with <name>" with that due date, and the time kept in the title (e.g. "at 10:00").`;
 function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
 
 /* ---------- views ---------- */
@@ -715,7 +716,8 @@ function viewCapture(){
   return out;
 }
 async function organize(text){
-  const res = await AI.json(`You are the executive assistant of a CEO in Egypt. ${ctxLine()}
+  const ask = p => AI.json(p).catch(e=>{ const other = AI===OAIX ? (CFG.claudeKey?AIX:null) : (CFG.openaiKey?OAIX:null); if (isBilling(e) && other) return other.json(p); throw e; });
+  const res = await ask(`You are the executive assistant of a CEO in Egypt. ${ctxLine()}
 ${LANG_RULE}
 Organize the message below. Be brief: short task titles, no filler. Write every task title, checklist step, note and summary in ${lang==="ar"?"Arabic script (convert Franco into proper Arabic; keep English names and brand terms as they are)":"clear English"}.
 Prioritize each task with the Eisenhower matrix: 1 = urgent and important (deadlines today or tomorrow, money, legal, clients, people crises), 2 = important not urgent (strategy, hiring, planning, health, relationships), 3 = urgent not important (routine requests someone else can handle; name a delegate if the message mentions one), 4 = neither.
@@ -902,6 +904,17 @@ function openSettings(){
 
 /* ---------- voice ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+/* Removes stutter-like repeats from speech recognition, e.g. "a a b a b c" -> "a b c". */
+function collapseRepeats(text){
+  let w=String(text||"").split(/\s+/).filter(Boolean), changed=true;
+  while(changed){ changed=false;
+    for(let i=0;i<w.length && !changed;i++) for(let L=Math.min(12,Math.floor((w.length-i)/2));L>=1;L--){
+      let same=true; for(let k=0;k<L;k++) if(w[i+k]!==w[i+L+k]){ same=false; break; }
+      if(same){ w.splice(i,L); changed=true; break; }
+    }
+  }
+  return w.join(" ");
+}
 function fmtDur(ms){ const s=Math.round(ms/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
 function voiceEngine(){ if (CFG.engine==="whisper" && CFG.openaiKey) return "whisper"; if (SR) return "phone"; if (CFG.openaiKey) return "whisper"; return "none"; }
 async function whisper(blob){
@@ -936,14 +949,19 @@ function openVoice(){
         V.mr.start(1000);
       } else {
         const rec = new SR(); V.rec=rec;
-        rec.lang=V.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
-        rec.onresult = e => { let fin="", im=""; for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) fin+=r[0].transcript+" "; else im+=r[0].transcript; } V.final=(V.base||"")+fin; V.interim=im; };
+        /* One phrase per session, restarted until the user taps stop. Android Chrome
+           repeats growing copies of the phrase in continuous mode, so keep only the
+           most complete copy of each phrase. */
+        rec.lang=V.lang; rec.continuous=false; rec.interimResults=true; rec.maxAlternatives=1;
+        V.segs=[]; V.cur="";
+        rec.onresult = e => { let best=""; for(let i=0;i<e.results.length;i++){ const tx=(e.results[i][0].transcript||"").trim(); if(tx.length>=best.length) best=tx; } if(best) V.cur=best; V.final=[...V.segs,V.cur].join(" "); };
         rec.onerror = e => { if(e.error==="not-allowed"||e.error==="service-not-allowed"){ V.err=t("micDenied"); V.stopAsked=true; } else if(e.error!=="no-speech" && e.error!=="aborted"){ V.err=e.error; } };
         rec.onend = () => {
-          if (!V.stopAsked && V.state==="rec"){ V.base=V.final; try{ rec.start(); return; }catch(e){} }
-          V.final=(V.final+" "+V.interim).trim(); V.interim=""; clearInterval(V.timer); finish();
+          if (V.cur){ const last=V.segs[V.segs.length-1]||""; if (!last || !V.cur.startsWith(last)) V.segs.push(V.cur); else V.segs[V.segs.length-1]=V.cur; V.cur=""; }
+          if (!V.stopAsked && V.state==="rec"){ try{ rec.start(); return; }catch(e){} }
+          V.final=collapseRepeats(V.segs.join(" ")); clearInterval(V.timer); finish();
         };
-        V.base=""; rec.start();
+        rec.start();
       }
       V.state="rec"; V.started=Date.now(); V.timer=setInterval(tick,500); refreshSheet();
     }catch(e){ stopTracks(); V.err = (e && (e.name==="NotAllowedError"||e.name==="SecurityError")) ? t("micDenied") : String(e.message||e); V.state="idle"; refreshSheet(); }
