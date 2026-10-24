@@ -26,9 +26,9 @@ On first open you choose a PIN, and the phone offers to register your fingerprin
 
 ## Turn on the AI
 
-1. Create an API key at console.anthropic.com. Billing must be set up on that account.
-2. In Maktab, open **Settings (⚙) → AI**, paste the key into **Claude API key**, and tap **Save**.
-3. Optional: add an **OpenAI API key** and set **Voice engine** to Whisper for the best transcription of long or mixed-language voice notes.
+1. Create an API key at platform.claude.com/settings/keys (choose the Default Workspace), or an OpenAI key at platform.openai.com/api-keys.
+2. In Maktab, open **Settings (⚙) → AI**, paste the key, choose **Who analyzes your notes** (Claude or ChatGPT), and tap **Save**.
+3. With an OpenAI key, Maktab switches the **Voice engine** to OpenAI transcription, which is best for long or mixed Arabic-English voice notes.
 
 ## Privacy and safety
 

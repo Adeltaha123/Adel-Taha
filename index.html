@@ -270,14 +270,14 @@ const T = {
   unlockBio:"Unlock with fingerprint",useBio:"Use fingerprint / Face",aiOff:"The assistant isn't available in this view. You can still add and manage everything by hand.",
   aiErr:"The assistant couldn't answer. Try again in a moment.",saved:"Saved",example:"Example",done:"Completed",
   greetName:"",of:"of",
-  aiOff:"Add your Claude API key in Settings to turn on the assistant. Everything else works without it.",openSettings:"Open Settings",
+  aiOff:"Add a Claude or OpenAI API key in Settings to turn on the assistant. Everything else works without it.",openSettings:"Open Settings",
   voice:"Voice",voiceTitle:"Voice note",tapRec:"Tap to record a voice note",tapRecSub:"Speak in Arabic or English. Maktab writes it down and organizes it.",
   tapStart:"Tap to start",listening:"Listening… tap to stop",transcribing:"Writing it down…",transcript:"Transcript",editHint:"You can fix any word before organizing.",
-  arabic:"Arabic (Egypt)",english:"English",typeInstead:"Type instead",engine:"Voice engine",engPhone:"Phone speech (free)",engWhisper:"Whisper (best for long or mixed notes)",
-  noSR:"This browser can't turn speech into text. Use Chrome on Android or Safari on iPhone, or add an OpenAI key in Settings for Whisper.",
+  arabic:"Arabic (Egypt)",english:"English",typeInstead:"Type instead",engine:"Voice engine",engPhone:"Phone speech (free)",engWhisper:"OpenAI transcription (best for long or mixed notes)",
+  noSR:"This browser can't turn speech into text. Use Chrome on Android or Safari on iPhone, or add an OpenAI key in Settings.",
   micDenied:"Microphone access was blocked. Allow the microphone for this site in your browser settings, then try again.",
   noVoice:"No voice notes yet. Tap the mic button below to record one.",play:"Play",saveVoice:"Save voice note",
-  claudeKey:"Claude API key",claudeKeyHint:"From console.anthropic.com. Stored only on this phone.",openaiKey:"OpenAI API key (optional, for Whisper)",model:"Model",speechLang:"Default voice language",
+  claudeKey:"Claude API key",claudeKeyHint:"From platform.claude.com/settings/keys. Stored only on this phone.",openaiKey:"OpenAI API key",model:"Model",speechLang:"Default voice language",
   backup:"Backup",exportB:"Export backup",importB:"Import backup",imported:"Backup restored",keysSaved:"Keys saved",
   privacy:"Everything is stored only on this device. Export a backup regularly. The lock screen protects the app if someone picks up your phone."},
  ar:{ask:"اسأل",today:"اليوم",tasks:"المهام",notes:"ملاحظات",habits:"العادات",capture:"تسجيل",
@@ -307,14 +307,14 @@ const T = {
   confirmPin:"أدخل الرقم مرة أخرى",pinMismatch:"الرقمان غير متطابقين. حاول مجدداً.",enterPin:"أدخل الرقم السري",wrongPin:"رقم خاطئ",
   unlockBio:"افتح بالبصمة",useBio:"استخدم البصمة / الوجه",aiOff:"المساعد غير متاح في هذا العرض. يمكنك إدارة كل شيء يدوياً.",
   aiErr:"تعذّر الرد. حاول بعد قليل.",saved:"تم الحفظ",example:"مثال",done:"مكتمل",greetName:"",of:"من",
-  aiOff:"أضف مفتاح Claude API في الإعدادات لتشغيل المساعد. باقي التطبيق يعمل بدونه.",openSettings:"افتح الإعدادات",
+  aiOff:"أضف مفتاح Claude أو OpenAI في الإعدادات لتشغيل المساعد. باقي التطبيق يعمل بدونه.",openSettings:"افتح الإعدادات",
   voice:"صوتيات",voiceTitle:"ملاحظة صوتية",tapRec:"اضغط لتسجيل ملاحظة صوتية",tapRecSub:"تحدث بالعربي أو الإنجليزي، ومكتب يكتبها وينظمها.",
   tapStart:"اضغط للبدء",listening:"جاري الاستماع… اضغط للإيقاف",transcribing:"جاري الكتابة…",transcript:"النص",editHint:"يمكنك تصحيح أي كلمة قبل التنظيم.",
-  arabic:"العربية (مصر)",english:"English",typeInstead:"اكتب بدلاً من ذلك",engine:"محرك الصوت",engPhone:"كلام الهاتف (مجاني)",engWhisper:"Whisper (الأفضل للملاحظات الطويلة أو المختلطة)",
-  noSR:"هذا المتصفح لا يحول الكلام إلى نص. استخدم Chrome على أندرويد أو Safari على آيفون، أو أضف مفتاح OpenAI لاستخدام Whisper.",
+  arabic:"العربية (مصر)",english:"English",typeInstead:"اكتب بدلاً من ذلك",engine:"محرك الصوت",engPhone:"كلام الهاتف (مجاني)",engWhisper:"تحويل OpenAI (الأفضل للملاحظات الطويلة أو المختلطة)",
+  noSR:"هذا المتصفح لا يحول الكلام إلى نص. استخدم Chrome على أندرويد أو Safari على آيفون، أو أضف مفتاح OpenAI في الإعدادات.",
   micDenied:"تم منع الميكروفون. اسمح بالميكروفون لهذا الموقع من إعدادات المتصفح ثم حاول مجدداً.",
   noVoice:"لا توجد ملاحظات صوتية بعد. اضغط زر الميكروفون بالأسفل.",play:"تشغيل",saveVoice:"احفظ الملاحظة الصوتية",
-  claudeKey:"مفتاح Claude API",claudeKeyHint:"من console.anthropic.com. يُحفظ على هذا الهاتف فقط.",openaiKey:"مفتاح OpenAI (اختياري، لـ Whisper)",model:"النموذج",speechLang:"لغة الصوت الافتراضية",
+  claudeKey:"مفتاح Claude API",claudeKeyHint:"من platform.claude.com/settings/keys. يُحفظ على هذا الهاتف فقط.",openaiKey:"مفتاح OpenAI API",model:"النموذج",speechLang:"لغة الصوت الافتراضية",
   backup:"نسخة احتياطية",exportB:"تصدير نسخة احتياطية",importB:"استيراد نسخة احتياطية",imported:"تمت الاستعادة",keysSaved:"تم حفظ المفاتيح",
   privacy:"كل البيانات محفوظة على هذا الجهاز فقط. صدّر نسخة احتياطية بانتظام. شاشة القفل تحمي التطبيق إذا أمسك أحد بهاتفك."}
 };
@@ -383,9 +383,9 @@ const IDB = {
   del(k){ return this.tx("readwrite",st=>st.delete(k)); }
 };
 /* settings kept outside the synced items so keys never land in a backup by accident */
-const CFG = { claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", engine:"phone", speechLang:"ar-EG" };
+const CFG = { provider:"claude", claudeKey:"", openaiKey:"", model:"claude-sonnet-5-5", openaiModel:"gpt-6.1-sol", engine:"phone", speechLang:"ar-EG" };
 try { Object.assign(CFG, JSON.parse(localStorage.getItem("mk_cfg")||"{}")); } catch(e){}
-function saveCfg(){ try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} AI = CFG.claudeKey ? AIX : null; }
+function saveCfg(){ try{ localStorage.setItem("mk_cfg", JSON.stringify(CFG)); }catch(e){} AI = pickAI(); }
 
 /* ---------- lock ---------- */
 const LOCK = { unlocked:false, hiddenAt:0 };
@@ -479,8 +479,45 @@ const AIX = {
     return "";
   }
 };
-let AI = CFG.claudeKey ? AIX : null;
-const aiErrMsg = e => e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?"مفتاح Claude API غير صحيح. راجعه في الإعدادات.":"Your Claude API key was rejected. Check it in Settings.") : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
+/* ---------- AI (OpenAI Responses API) ---------- */
+async function oaiCall(body){
+  const r = await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"content-type":"application/json","Authorization":"Bearer "+CFG.openaiKey},body:JSON.stringify({model:CFG.openaiModel||"gpt-6.1-sol",reasoning:{effort:"low"},...body})});
+  let j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw {code:r.status===401?"bad_key":"api",message:(j&&j.error&&j.error.message)||("HTTP "+r.status)};
+  return j;
+}
+const oaiText = j => (j.output||[]).filter(o=>o.type==="message").flatMap(o=>o.content||[]).filter(c=>c.type==="output_text").map(c=>c.text).join("");
+const OAIX = {
+  async json(prompt){
+    const txt = oaiText(await oaiCall({input:prompt}));
+    const m = txt.match(/[\[{][\s\S]*[\]}]/);
+    try { return JSON.parse(m?m[0]:txt); } catch(e){ throw {code:"invalid_json",message:"Unreadable answer"}; }
+  },
+  async chat(system, messages, tools){
+    const defs = tools.map(x=>({type:"function",name:x.name,description:x.description,parameters:x.inputSchema}));
+    let j = await oaiCall({instructions:system,input:messages.map(m=>({role:m.role,content:m.content})),tools:defs});
+    for (let round=0; round<6; round++){
+      const calls=(j.output||[]).filter(o=>o.type==="function_call");
+      if (!calls.length) return oaiText(j);
+      const outs=[];
+      for (const c of calls){
+        const tool=tools.find(x=>x.name===c.name); let args={}; try{ args=JSON.parse(c.arguments||"{}"); }catch(e){}
+        let out; try{ out=JSON.stringify(await tool.execute(args)); }catch(e){ out=JSON.stringify({error:String(e.message||e)}); }
+        outs.push({type:"function_call_output",call_id:c.call_id,output:out});
+      }
+      j = await oaiCall({instructions:system,previous_response_id:j.id,input:outs,tools:defs});
+    }
+    return oaiText(j);
+  }
+};
+function pickAI(){
+  if (CFG.provider==="openai" && CFG.openaiKey) return OAIX;
+  if (CFG.provider!=="openai" && CFG.claudeKey) return AIX;
+  return CFG.claudeKey ? AIX : CFG.openaiKey ? OAIX : null;
+}
+let AI = pickAI();
+const providerName = () => AI===OAIX ? "OpenAI" : "Claude";
+const aiErrMsg = e => e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?`مفتاح ${providerName()} غير صحيح. راجعه في الإعدادات.`:`Your ${providerName()} API key was rejected. Check it in Settings.`) : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
 function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
 const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning.`;
 function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
@@ -824,6 +861,8 @@ function openSettings(){
     }},svg("finger"),st.bioId?t("bioOn"):t("bioOff"));
     const ck=h("input",{class:"field",id:"cfgClaude",type:"password",autocomplete:"off",placeholder:"sk-ant-…",value:CFG.claudeKey||""});
     const ok=h("input",{class:"field",id:"cfgOpenai",type:"password",autocomplete:"off",placeholder:"sk-…",value:CFG.openaiKey||""});
+    const pv=h("select",{class:"field",id:"cfgProvider"},[["claude","Claude (Anthropic)"],["openai","ChatGPT (OpenAI)"]].map(([v,l])=>h("option",{value:v,selected:CFG.provider===v},l)));
+    const om=h("select",{class:"field",id:"cfgOModel"},[["gpt-6.1-sol","GPT-6.1 Sol (balanced)"],["gpt-6-astra","GPT-6 Astra (smartest)"],["gpt-6-luna","GPT-6 Luna (fastest, cheapest)"]].map(([v,l])=>h("option",{value:v,selected:CFG.openaiModel===v},l)));
     const md=h("select",{class:"field",id:"cfgModel"},[["claude-sonnet-5-5","Claude Sonnet 5.5"],["claude-opus-5-5","Claude Opus 5.5"],["claude-haiku-5-5","Claude Haiku 5.5 (fastest)"]].map(([v,l])=>h("option",{value:v,selected:CFG.model===v},l)));
     const eng=h("select",{class:"field",id:"cfgEngine"},[["phone",t("engPhone")],["whisper",t("engWhisper")]].map(([v,l])=>h("option",{value:v,selected:CFG.engine===v},l)));
     const sl=h("select",{class:"field",id:"cfgLang"},[["ar-EG",t("arabic")],["en-US",t("english")]].map(([v,l])=>h("option",{value:v,selected:CFG.speechLang===v},l)));
@@ -837,12 +876,14 @@ function openSettings(){
       h("div",{class:"section"},h("span",{class:"eyebrow"},t("language")),
         h("div",{class:"seg"},[["en","English"],["ar","العربية"]].map(([k,l])=>h("button",{type:"button","aria-pressed":lang===k?"true":"false",onclick:()=>{lang=k;try{localStorage.setItem("mk_lang",k);}catch(e){} applyLang(); render(); refreshSheet();}},l)))),
       h("div",{class:"section"},h("span",{class:"eyebrow"},"AI"),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},lang==="ar"?"من يحلل ملاحظاتك":"Who analyzes your notes"),pv),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("claudeKey")),ck,h("span",{class:"small muted"},t("claudeKeyHint"))),
-        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("model")),md),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},"Claude "+t("model")),md),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("openaiKey")),ok,h("span",{class:"small muted"},lang==="ar"?"من platform.openai.com/api-keys. يُحفظ على هذا الهاتف فقط.":"From platform.openai.com/api-keys. Stored only on this phone.")),
+        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},"OpenAI "+t("model")),om),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("engine")),eng),
         h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("speechLang")),sl),
-        h("label",{class:"section",style:"gap:4px"},h("span",{class:"small"},t("openaiKey")),ok),
-        h("button",{type:"button",class:"btn primary",onclick:()=>{ CFG.claudeKey=ck.value.trim(); CFG.openaiKey=ok.value.trim(); CFG.model=md.value; CFG.engine=eng.value; CFG.speechLang=sl.value; saveCfg(); render(); toast(t("keysSaved")); }},t("save"))),
+        h("button",{type:"button",class:"btn primary",onclick:()=>{ const hadO=!!CFG.openaiKey; CFG.provider=pv.value; CFG.claudeKey=ck.value.trim(); CFG.openaiKey=ok.value.trim(); CFG.model=md.value; CFG.openaiModel=om.value; CFG.engine=(!hadO && CFG.openaiKey && eng.value==="phone") ? "whisper" : eng.value; CFG.speechLang=sl.value; saveCfg(); render(); toast(t("keysSaved")); }},t("save"))),
       h("div",{class:"section"},h("span",{class:"eyebrow"},t("security")),
         h("div",{class:"card row",style:"justify-content:space-between"},h("span",null,t("bio")),bioBtn),
         !bioSupported()?h("p",{class:"small muted",style:"margin:0"},t("bioNA")):null,
@@ -864,8 +905,8 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 function fmtDur(ms){ const s=Math.round(ms/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
 function voiceEngine(){ if (CFG.engine==="whisper" && CFG.openaiKey) return "whisper"; if (SR) return "phone"; if (CFG.openaiKey) return "whisper"; return "none"; }
 async function whisper(blob){
-  const fd=new FormData(); const ext=(blob.type.includes("mp4")||blob.type.includes("m4a"))?"m4a":blob.type.includes("ogg")?"ogg":"webm";
-  fd.append("file",blob,"voice."+ext); fd.append("model","whisper-1");
+  const fd=new FormData(); const ext=(blob.type.includes("mp4")||blob.type.includes("m4a"))?"m4a":"webm";
+  fd.append("file",blob,"voice."+ext); fd.append("model","gpt-transcribe");
   fd.append("prompt","Egyptian Arabic and English business voice note. ملاحظة صوتية بالعامية المصرية والإنجليزية عن العمل.");
   const r=await fetch("https://api.openai.com/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+CFG.openaiKey},body:fd});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error((j.error&&j.error.message)||("HTTP "+r.status));
@@ -883,7 +924,7 @@ function openVoice(){
     try{
       if (engine==="whisper"){
         V.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-        const type=["audio/webm;codecs=opus","audio/mp4","audio/webm","audio/ogg"].find(x=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(x))||"";
+        const type=["audio/webm;codecs=opus","audio/webm","audio/mp4"].find(x=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(x))||"";
         V.mr = new MediaRecorder(V.stream, type?{mimeType:type}:undefined);
         V.mr.ondataavailable = e => { if(e.data && e.data.size) V.chunks.push(e.data); };
         V.mr.onstop = async () => {
@@ -941,7 +982,7 @@ function openVoice(){
       h("div",{class:"row",style:"justify-content:space-between"},h("h2",null,t("voiceTitle")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
     ];
     if (engine==="none"){ out.push(h("div",{class:"banner"},t("noSR"))); return out; }
-    if (!AI && V.state==="idle") out.push(h("div",{class:"banner row",style:"justify-content:space-between"},h("span",{class:"grow"},ar?"لكي يحلل مكتب ملاحظاتك الصوتية، أضف مفتاح Claude API في الإعدادات أولاً.":"To have your voice notes analyzed, add your Claude API key in Settings first."),h("button",{type:"button",class:"btn",style:"height:34px;font-size:13px",onclick:openSettings},t("openSettings"))));
+    if (!AI && V.state==="idle") out.push(h("div",{class:"banner row",style:"justify-content:space-between"},h("span",{class:"grow"},ar?"لكي يحلل مكتب ملاحظاتك الصوتية، أضف مفتاح Claude أو OpenAI في الإعدادات أولاً.":"To have your voice notes analyzed, add a Claude or OpenAI API key in Settings first."),h("button",{type:"button",class:"btn",style:"height:34px;font-size:13px",onclick:openSettings},t("openSettings"))));
 
     if (V.state==="idle" || V.state==="rec"){
       if (engine==="phone") out.push(h("div",{class:"seg",role:"group"},[["ar-EG",t("arabic")],["en-US",t("english")]].map(([k,l])=>h("button",{type:"button","aria-pressed":V.lang===k?"true":"false",disabled:V.state==="rec",onclick:()=>{V.lang=k;CFG.speechLang=k;saveCfg();refreshSheet();}},l))));
@@ -981,7 +1022,7 @@ function openVoice(){
       out.push(said());
     }
     if (V.state==="nokey"){
-      out.push(h("div",{class:"banner"},ar?"حفظت ملاحظتك الصوتية. لتحليلها تلقائياً، أضف مفتاح Claude API في الإعدادات، ثم اضغط \"حلل\" عليها في الصوتيات.":"Your voice note is saved. To have it analyzed automatically, add your Claude API key in Settings, then tap Analyze on it under Voice."));
+      out.push(h("div",{class:"banner"},ar?"حفظت ملاحظتك الصوتية. لتحليلها تلقائياً، أضف مفتاح Claude أو OpenAI في الإعدادات، ثم اضغط \"حلل\" عليها في الصوتيات.":"Your voice note is saved. To have it analyzed automatically, add a Claude or OpenAI API key in Settings, then tap Analyze on it under Voice."));
       out.push(h("button",{type:"button",class:"btn primary",onclick:openSettings},t("openSettings")));
       out.push(said());
     }
