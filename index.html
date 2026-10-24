@@ -480,7 +480,7 @@ const AIX = {
   }
 };
 let AI = CFG.claudeKey ? AIX : null;
-const aiErrMsg = e => e && e.code==="bad_key" ? (lang==="ar"?"مفتاح Claude API غير صحيح. راجعه في الإعدادات.":"Your Claude API key was rejected. Check it in Settings.") : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
+const aiErrMsg = e => e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?"مفتاح Claude API غير صحيح. راجعه في الإعدادات.":"Your Claude API key was rejected. Check it in Settings.") : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
 function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
 const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning.`;
 function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
