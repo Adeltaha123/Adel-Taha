@@ -194,6 +194,40 @@ nav.tabs .fab .disc svg{width:26px;height:26px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:360px){.matrix{grid-template-columns:1fr}}
 [dir="rtl"] .flip{transform:scaleX(-1)}
+/* task sheet */
+.ts-head{display:flex;align-items:center;gap:10px}
+.qdot{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--qc);background:color-mix(in srgb,var(--qc) 12%,transparent);padding:4px 10px;border-radius:999px}
+.qdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--qc)}
+.ts-title{width:100%;border:0;background:transparent;font-family:var(--f-display);font-size:21px;font-weight:600;line-height:1.35;padding:0;resize:none;outline:none;field-sizing:content;min-height:1.4em;color:var(--ink)}
+.ts-title:focus{box-shadow:0 2px 0 var(--accent)}
+.ts-meta{display:flex;flex-wrap:wrap;gap:6px}
+.ts-meta .chip{font-size:13px;padding:4px 10px}
+.ts-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ts-actions .btn{width:100%}
+.ts-sec{display:flex;flex-direction:column;gap:8px;padding-top:4px;border-top:1px solid var(--line);padding-block-start:14px}
+.quote{border-inline-start:3px solid var(--gold);padding:8px 12px;background:var(--surface);border-start-end-radius:10px;border-end-end-radius:10px;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.qmini{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.qmini button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 10px;font-size:13px;font-weight:600;text-align:start}
+.qmini button::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--qc)}
+.qmini button[aria-pressed="true"]{border-color:var(--qc);background:color-mix(in srgb,var(--qc) 12%,var(--surface))}
+.fieldlbl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.detail-line{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+/* day strip */
+.daystrip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-block:2px 4px}
+.daystrip::-webkit-scrollbar{display:none}
+.dchip{flex:none;min-width:54px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:6px 8px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;color:var(--muted)}
+.dchip b{font-family:var(--f-display);font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.2}
+.dchip.wide{min-width:auto;padding-inline:12px;justify-content:center}
+.dchip.today{border-color:var(--gold)}
+.dchip.late b{color:var(--q1)}
+.dchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dchip[aria-pressed="true"] b{color:var(--on-accent)}
+.dchip .dots{display:flex;gap:2px;height:5px}
+.dchip .dots i{width:5px;height:5px;border-radius:50%;background:var(--qc)}
+.dchip[aria-pressed="true"] .dots i{background:var(--on-accent)}
+.mini .sub{display:block;font-size:11px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
+.mini .sub.late{color:var(--q1)}
+.qmore{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;padding:2px 0;text-align:start}
 /* calendar */
 .cal-group{display:flex;flex-direction:column;gap:8px}
 .cal-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -246,10 +280,11 @@ audio{width:100%;height:40px}
 <nav class="tabs" aria-label="Main">
   <div class="inner">
     <button type="button" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-t="today">Today</span></button>
-    <button type="button" data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span data-t="tasks">Tasks</span></button>
-    <button type="button" id="fabMic" class="fab" aria-label="Voice note"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></span></button>
-    <button type="button" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span data-t="notes">Notes</span></button>
     <button type="button" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"/></svg><span data-t="calendar">Calendar</span></button>
+    <button type="button" id="fabMic" class="fab" aria-label="Voice note"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></span></button>
+    <button type="button" data-tab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg><span data-t="tasks">Tasks</span></button>
+    <button type="button" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span data-t="notes">Notes</span></button>
+
   </div>
 </nav>
 
@@ -305,6 +340,7 @@ const T = {
   getRem:"Get reminders",getRemSub:"For reminders even when My PA is closed, add your tasks to your phone calendar. It alerts you, and Google Calendar can also email you.",exportIcs:"Add all upcoming to my calendar",
   notifOn:"Turn on notifications",notifOnDone:"Notifications are on. They arrive while My PA is open or was used recently.",notifBlocked:"Notifications are blocked. Allow them for this site in Chrome settings.",
   noDated:"tasks have no date",nothingCal:"Nothing scheduled. Tasks with a date appear here.",manage:"Manage",addHabitBtn:"Add a habit",nextUp:"Next up",
+  details:"Details",detailsPh:"Context, options, people, amounts…",youSaid:"What you said",playVoice:"Play voice note",markDone:"Mark done",reopen:"Mark not done",when:"When",noDate:"No date",allTasks:"All",more:"more",addCal:"Add to calendar",
   privacy:"Everything is stored only on this device. Export a backup regularly. The lock screen protects the app if someone picks up your phone."},
  ar:{ask:"اسأل",today:"اليوم",tasks:"المهام",notes:"ملاحظات",habits:"العادات",capture:"تسجيل",
   goodMorning:"صباح الخير",goodAfternoon:"مساء الخير",goodEvening:"مساء الخير",
@@ -347,6 +383,7 @@ const T = {
   getRem:"احصل على التذكيرات",getRemSub:"لكي تصلك التذكيرات حتى وتطبيق My PA مغلق، أضف مهامك إلى تقويم هاتفك. سينبهك، ويمكن لتقويم Google أن يرسل لك بريداً أيضاً.",exportIcs:"أضف كل القادم إلى تقويمي",
   notifOn:"فعّل الإشعارات",notifOnDone:"الإشعارات مفعّلة. تصلك أثناء فتح التطبيق أو بعد استخدامه بقليل.",notifBlocked:"الإشعارات ممنوعة. اسمح بها لهذا الموقع من إعدادات Chrome.",
   noDated:"مهام بدون تاريخ",nothingCal:"لا يوجد شيء مجدول. المهام ذات التاريخ تظهر هنا.",manage:"إدارة",addHabitBtn:"أضف عادة",nextUp:"التالي",
+  details:"التفاصيل",detailsPh:"السياق، الخيارات، الأشخاص، المبالغ…",youSaid:"ما قلته",playVoice:"شغّل الملاحظة الصوتية",markDone:"تمت",reopen:"إلغاء الإنجاز",when:"الموعد",noDate:"بدون تاريخ",allTasks:"الكل",more:"المزيد",addCal:"أضف للتقويم",
   privacy:"كل البيانات محفوظة على هذا الجهاز فقط. صدّر نسخة احتياطية بانتظام. شاشة القفل تحمي التطبيق إذا أمسك أحد بهاتفك."}
 };
 let lang = "en";
@@ -374,6 +411,9 @@ function h(tag, attrs, ...kids){
   return n;
 }
 const ICON = {
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M12 13v5M9.5 15.5h5"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z"/></svg>',
@@ -404,7 +444,21 @@ function persist(){ try{ localStorage.setItem("mk_items", JSON.stringify([...S.i
 async function put(id, data){ data = {...data, id}; S.items.set(id, data); persist(); render(); }
 async function patch(id, fields){ const cur=S.items.get(id); if(!cur) return; return put(id,{...cur,...fields,updated:Date.now()}); }
 async function remove(id){ const x=S.items.get(id); S.items.delete(id); persist(); render(); if(x && x.audioId) IDB.del(x.audioId).catch(()=>{}); }
-function loadLocal(){ try{ const raw=localStorage.getItem("mk_items"); if(raw) S.items=new Map(JSON.parse(raw)); }catch(e){} }
+function loadLocal(){ try{ const raw=localStorage.getItem("mk_items"); if(raw) S.items=new Map(JSON.parse(raw)); }catch(e){} fixTitleTimes(); }
+const toLatin = v => String(v).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+function fixTitleTimes(){
+  let changed=false;
+  for (const x of S.items.values()){
+    if (x.kind!=="task" || x.time || !x.title) continue;
+    let m = x.title.match(/^(.*\S)\s+(?:at|@)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?\s*$/i);
+    let title, hh, mm;
+    if (m){ title=m[1]; hh=+m[2]; mm=m[3]||"00"; if(m[4]){ const pm=/pm/i.test(m[4]); if(pm&&hh<12) hh+=12; if(!pm&&hh===12) hh=0; } }
+    else { m = x.title.match(/^(.*\S)\s+(?:الساعة|الساعه)\s*([0-9٠-٩]{1,2})(?:[:.]([0-9٠-٩]{2}))?\s*$/); if(m){ title=m[1]; hh=+toLatin(m[2]); mm=m[3]?toLatin(m[3]):"00"; } }
+    if (!m || hh>23) continue;
+    x.title=title; x.time=String(hh).padStart(2,"0")+":"+mm; changed=true;
+  }
+  if (changed) persist();
+}
 const IDB = {
   db:null,
   open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("maktab",1); r.onupgradeneeded=()=>r.result.createObjectStore("audio"); r.onsuccess=()=>{this.db=r.result;res(r.result);}; r.onerror=()=>rej(r.error); }); },
@@ -568,8 +622,8 @@ const providerName = () => AI===OAIX ? "OpenAI" : "Claude";
 const isBilling = e => !!(e && /credit|quota|billing|insufficient|balance/i.test(e.message||""));
 const aiErrMsg = e => isBilling(e) ? (lang==="ar"?`حساب ${providerName()} ليس به رصيد. أضف رصيداً من صفحة الفوترة${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" في platform.claude.com"}، أو بدّل المحلل إلى ${providerName()==="OpenAI"?"Claude":"ChatGPT"} من الإعدادات.`:`Your ${providerName()} account has no credit left. Add credit on its billing page${providerName()==="OpenAI"?" (platform.openai.com/settings/organization/billing)":" in platform.claude.com"}, or switch "Who analyzes your notes" to ${providerName()==="OpenAI"?"Claude":"ChatGPT"} in Settings.`) : e && /workspace/i.test(e.message||"") ? (lang==="ar"?"هذا المفتاح غير مرتبط بمساحة عمل. أنشئ مفتاحاً جديداً واختر Default Workspace عند إنشائه.":"This key isn't linked to a workspace. Create a new key and choose the Default Workspace when you create it.") : e && e.code==="bad_key" ? (lang==="ar"?`مفتاح ${providerName()} غير صحيح. راجعه في الإعدادات.`:`Your ${providerName()} API key was rejected. Check it in Settings.`) : (e && e.message ? t("aiErr")+" ("+e.message+")" : t("aiErr"));
 function ctxLine(){ const d=new Date(); return `Today is ${TODAY()} (${d.toLocaleDateString("en-GB",{weekday:"long"})}), Cairo time ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}. The work week in Egypt is Sunday to Thursday.`; }
-const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning. Speech recognition may repeat words or partial phrases (e.g. "عندنا عندنا بكره عندنا بكره ميتنج"); treat repeats as one mention. English business words are often written phonetically in Arabic script: ميتنج/ميتينج/ميتك = meeting, كول = call, ديدلاين = deadline, بريزنتيشن = presentation, إيميل = email, بروبوزال = proposal. A meeting with a time becomes one task titled like "Meeting with <name>" with that due date and the clock time in the "time" field (24-hour, e.g. "10:00"; "الساعة ٣ العصر" = "15:00"). If a time is given without a day, assume today if it is still ahead, otherwise tomorrow.`;
-function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,time:x.time||undefined,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
+const LANG_RULE = `The CEO may write in English, Arabic (Egyptian dialect or MSA), Franco-Arabic (Arabic written in Latin letters with digits: 2=ء 3=ع 5=خ 7=ح 8=غ 9=ق, e.g. "bokra" tomorrow, "ba3d bokra" day after tomorrow, "el esbo3 el gay" next week, "lazem" must), or a mix of all three. Text may be a dictated voice note with no punctuation and transcription mistakes; infer the intended meaning. Egyptian weekday names, including spoken or mis-transcribed forms: الحد/الأحد = Sunday, الاتنين/الإثنين = Monday, التلات/الثلاث/ثلاث/ثلالث/الثلاثاء = Tuesday, الأربع/أربع/الأربعاء = Wednesday, الخميس = Thursday, الجمعة = Friday, السبت = Saturday; a bare weekday means its next occurrence. Speech recognition may repeat words or partial phrases (e.g. "عندنا عندنا بكره عندنا بكره ميتنج"); treat repeats as one mention. English business words are often written phonetically in Arabic script: ميتنج/ميتينج/ميتك = meeting, كول = call, ديدلاين = deadline, بريزنتيشن = presentation, إيميل = email, بروبوزال = proposal. A meeting with a time becomes one task titled like "Meeting with <name>" with that due date and the clock time in the "time" field (24-hour, e.g. "10:00"; "الساعة ٣ العصر" = "15:00"). If a time is given without a day, assume today if it is still ahead, otherwise tomorrow.`;
+function taskBrief(){ return all("task").filter(x=>!x.done).map(x=>({id:x.id,title:x.title,quadrant:x.q,due:x.due||null,time:x.time||undefined,details:x.details||undefined,top3:!!x.top,checklist:(x.items||[]).length?`${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`:undefined,delegate:x.delegate||undefined})); }
 
 /* ---------- views ---------- */
 let TAB = "today";
@@ -660,6 +714,7 @@ function taskRow(x){
     checkBtn(x.done,()=>toggleTask(x)),
     h("div",{class:"body",onclick:()=>openTask(x.id)},
       h("div",{class:"title",dir:"auto"},x.title),
+      x.details?h("div",{class:"detail-line",dir:"auto"},x.details.split("\n")[0]):null,
       h("div",{class:"meta"},
         x.top && !x.done ? h("span",{class:"chip star"},"★ Top 3") : null,
         h("span",{class:"chip"},t("q"+(x.q||2))),
@@ -738,23 +793,53 @@ async function applyPlan(){
 }
 
 function viewTasks(){
-  const tasks = all("task").filter(x=>UI.showDone || !x.done).sort(sortTasks);
+  const ar = lang==="ar", td = TODAY();
+  const base = all("task").filter(x=>UI.showDone || !x.done);
+  const open = all("task").filter(x=>!x.done);
+  const f = UI.taskDay || "all";
+  const match = x => f==="all" ? true : f==="late" ? (x.due && x.due<td && !x.done) : f==="nodate" ? !x.due : x.due===f;
+  const tasks = base.filter(match).sort((a,b)=> f!=="all"&&f!=="nodate" ? ((a.time||"99").localeCompare(b.time||"99")||sortTasks(a,b)) : sortTasks(a,b));
   const out = [];
   out.push(h("div",{class:"section-head"},h("h1",null,t("tasks")),
     h("button",{type:"button",class:"btn ghost",style:"height:34px;font-size:13px",onclick:()=>{UI.showDone=!UI.showDone;render();}},UI.showDone?t("hideDone"):t("showDone"))));
   const inp = h("input",{class:"field grow",id:"newTask",dir:"auto",placeholder:t("addTask"),autocomplete:"off"});
-  const submit = e => { e.preventDefault(); const v=inp.value.trim(); if(!v) return; inp.value=""; const id=uid("task"); put(id,{kind:"task",title:v,q:2,done:false,items:[],created:Date.now()}); toast(t("added")); };
+  const submit = e => { e.preventDefault(); const v=inp.value.trim(); if(!v) return; inp.value=""; const id=uid("task"); const due=/^\d{4}-/.test(f)?f:null; put(id,{kind:"task",title:v,q:2,due,done:false,items:[],created:Date.now()}); toast(t("added")); };
   out.push(h("form",{class:"row",style:"flex-wrap:nowrap",onsubmit:submit},inp,h("button",{class:"btn primary",type:"submit"},t("add"))));
+  /* day strip: the calendar side of the planner */
+  const late = open.filter(x=>x.due&&x.due<td).length, nod = open.filter(x=>!x.due).length;
+  const pick = v => h("button",{type:"button",class:"dchip wide","aria-pressed":f===v?"true":"false",onclick:()=>{UI.taskDay=v;render();}});
+  const strip = h("div",{class:"daystrip",role:"group","aria-label":t("calendar")});
+  const all1 = pick("all"); all1.append(h("b",null,String(open.length)),t("allTasks")); strip.append(all1);
+  if (late){ const c=pick("late"); c.classList.add("late"); c.append(h("b",null,String(late)),t("overdue")); strip.append(c); }
+  for (let i=0;i<14;i++){
+    const k=addDays(td,i), list=open.filter(x=>x.due===k).sort((a,b)=>(a.q||2)-(b.q||2));
+    strip.append(h("button",{type:"button",class:"dchip"+(i===0?" today":""),"aria-pressed":f===k?"true":"false","aria-label":fmtDate(k,{weekday:"long",day:"numeric",month:"long"}),onclick:()=>{UI.taskDay=k;render();}},
+      h("span",null,i===0?t("dueToday"):fmtDate(k,{weekday:"short"})),
+      h("b",null,new Date(...k.split("-").map((v,j)=>j===1?v-1:+v)).toLocaleDateString(ar?"ar-EG":"en-GB",{day:"numeric"})),
+      h("span",{class:"dots"},list.slice(0,4).map(x=>h("i",{style:`--qc:${qColor(x.q)}`})))));
+  }
+  if (nod){ const c=pick("nodate"); c.append(h("b",null,String(nod)),t("noDate")); strip.append(c); }
+  out.push(strip);
+  if (f!=="all") out.push(h("div",{class:"row",style:"justify-content:space-between"},
+    h("h2",null, f==="late"?t("overdue"):f==="nodate"?t("noDate"):fmtDate(f,{weekday:"long",day:"numeric",month:"long"})),
+    h("button",{type:"button",class:"btn ghost",style:"height:32px;font-size:13px",onclick:()=>{UI.taskDay="all";render();}},t("allTasks"))));
   out.push(h("div",{class:"seg",role:"group"},
     ["matrix","list"].map(m=>h("button",{type:"button","aria-pressed":UI.taskMode===m?"true":"false",onclick:()=>{UI.taskMode=m;rememberUI();render();}},t(m)))));
   if (UI.taskMode==="matrix"){
+    UI.qOpen = UI.qOpen || {};
+    const dayView = /^\d{4}-/.test(f);
     out.push(h("div",{class:"matrix"},Q.map(q=>{ const list=tasks.filter(x=>(x.q||2)===q);
+      const LIM=6, shown = UI.qOpen[q] ? list : list.slice(0,LIM);
       return h("div",{class:"quad",style:`--qc:${qColor(q)}`},
         h("h3",null,h("span",null,t("q"+q)),h("span",{class:"chip"},String(list.filter(x=>!x.done).length))),
         h("div",{class:"hint"},t("q"+q+"h")),
-        list.map(x=>h("div",{class:"mini"+(x.done?" done":""),onclick:()=>openTask(x.id)},checkBtn(x.done,()=>toggleTask(x)),h("span",{dir:"auto"},(x.top&&!x.done?"★ ":"")+x.title)))); })));
+        shown.length ? shown.map(x=>{ const sub = dayView ? (x.time?fmtTime(x.time):"") : (x.due ? whenLabel(x) : "");
+          return h("div",{class:"mini"+(x.done?" done":""),onclick:()=>openTask(x.id)},checkBtn(x.done,()=>toggleTask(x)),
+            h("span",{dir:"auto"},(x.top&&!x.done?"★ ":"")+x.title, sub?h("span",{class:"sub"+(x.due&&x.due<td&&!x.done?" late":"")},sub):null)); })
+          : h("div",{class:"hint"},"—"),
+        list.length>LIM ? h("button",{type:"button",class:"qmore",onclick:()=>{UI.qOpen[q]=!UI.qOpen[q];render();}},UI.qOpen[q]?(ar?"عرض أقل":"Show less"):`+${list.length-LIM} ${t("more")}`) : null); })));
   } else {
-    out.push(h("div",{class:"stack",style:"gap:8px"},tasks.length?tasks.map(taskRow):h("p",{class:"muted"},t("top3Empty"))));
+    out.push(h("div",{class:"stack",style:"gap:8px"},tasks.length?tasks.map(taskRow):h("p",{class:"muted"},"—")));
   }
   return out;
 }
@@ -770,42 +855,75 @@ function openSheet(build){
   sheetEl._build(); document.body.append(sheetEl);
 }
 function refreshSheet(){ if (sheetEl && sheetEl._build) sheetEl._build(); }
+function whenLabel(x){
+  if (!x.due) return t("noDate");
+  const td=TODAY(); const d = x.due===td?t("dueToday"):x.due===addDays(td,1)?t("tomorrow"):fmtDate(x.due,{weekday:"short",day:"numeric",month:"short"});
+  return d+(x.time?" · "+fmtTime(x.time):"");
+}
+function remLabel(x){ const r=remOf(x); if(r===-1||!x.due) return null; const ar=lang==="ar";
+  if (r===0) return x.time?(ar?"في الموعد":"at the time"):(ar?"صباح اليوم":"morning of"); if (r===1440) return ar?"قبل يوم":"1 day before";
+  return r>=60?(ar?`قبل ${r/60} س`:`${r/60}h before`):(ar?`قبل ${r} د`:`${r} min before`); }
 function openTask(id){
   let armed = false;
   openSheet(() => {
     const x = S.items.get(id); if (!x){ setTimeout(closeSheet); return []; }
+    const ar = lang==="ar";
     const items = x.items||[]; const dn = items.filter(i=>i.done).length;
-    const title = h("textarea",{class:"field",id:"tTitle",dir:"auto",rows:"2",style:"min-height:60px;font-weight:600",onchange:e=>patch(id,{title:e.target.value.trim()||x.title})});
+    const title = h("textarea",{class:"ts-title",id:"tTitle",dir:"auto",rows:"1","aria-label":t("title"),onchange:e=>patch(id,{title:e.target.value.trim()||x.title})});
     title.value = x.title;
+    const details = h("textarea",{class:"field",id:"tDetails",dir:"auto",rows:"3",style:"min-height:84px",placeholder:t("detailsPh"),onchange:e=>patch(id,{details:e.target.value.trim()||null})});
+    details.value = x.details||"";
     const stepIn = h("input",{class:"field grow",id:"tStep",dir:"auto",placeholder:t("addStep")});
     const addStep = e => { e.preventDefault(); const v=stepIn.value.trim(); if(!v) return; patch(id,{items:[...items,{t:v,done:false}]}).then(()=>{refreshSheet(); setTimeout(()=>$("#tStep")?.focus(),30);}); };
     const delBtn = h("button",{type:"button",class:"btn danger ghost",onclick:()=>{ if(!armed){armed=true;delBtn.textContent=t("confirmDel");return;} remove(id); closeSheet(); }},t("del"));
+    const said = x.said || (x.source && x.source.length<=220 ? x.source : null);
+    const voice = x.voiceId ? S.items.get(x.voiceId) : null;
+    const audioBox = h("div");
+    const rem = remLabel(x);
     return [
-      h("div",{class:"row",style:"justify-content:space-between"},h("span",{class:"eyebrow"},t("task")),h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
+      h("div",{class:"ts-head"},
+        h("span",{class:"qdot",style:`--qc:${qColor(x.q)}`},t("q"+(x.q||2))),
+        x.top&&!x.done?h("span",{class:"chip star"},"★ Top 3"):null,
+        h("span",{class:"grow"}),
+        h("button",{type:"button",class:"btn",style:"height:36px",onclick:closeSheet},t("close"))),
       title,
-      h("div",{class:"section"},h("span",{class:"eyebrow"},t("priority")),
-        h("div",{class:"qpick"},Q.map(q=>h("button",{type:"button",style:`--qc:${qColor(q)}`,"aria-pressed":(x.q||2)===q?"true":"false",onclick:()=>patch(id,{q}).then(refreshSheet)},h("b",null,t("q"+q)),t("q"+q+"h"))))),
-      h("div",{class:"row",style:"align-items:flex-end;flex-wrap:nowrap"},
-        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("due")),
-          h("input",{type:"date",class:"field",id:"tDue",value:x.due||"",onchange:e=>patch(id,{due:e.target.value||null}).then(refreshSheet)})),
-        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("time")),
-          h("input",{type:"time",class:"field",id:"tTime",value:x.time||"",onchange:e=>patch(id,{time:normTime(e.target.value)}).then(refreshSheet)}))),
-      h("div",{class:"row",style:"align-items:flex-end;flex-wrap:nowrap"},
-        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("reminder")),
-          h("select",{class:"field",id:"tRem",disabled:!x.due,onchange:e=>patch(id,{remind:+e.target.value})},
-            [[-1,"remNone"],[0,"remAt"],[10,"rem10"],[30,"rem30"],[60,"rem60"],[1440,"rem1d"]].filter(([v])=>x.time||[-1,0,1440].includes(v)).map(([v,k])=>h("option",{value:String(v),selected:remOf(x)===v},t(k==="remAt"&&!x.time?"remMorning":k))))),
-        h("label",{class:"grow section",style:"gap:4px"},h("span",{class:"eyebrow"},t("delegateTo")),
-          h("input",{class:"field",id:"tDel",dir:"auto",value:x.delegate||"",onchange:e=>patch(id,{delegate:e.target.value.trim()||null})}))),
-      x.due ? h("a",{class:"btn",href:gcalUrl(x),target:"_blank",rel:"noopener",style:"text-decoration:none"},h("span",{html:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M12 13v5M9.5 15.5h5"/></svg>',style:"display:contents"}),t("addGcal")) : null,
-      h("div",{class:"section"},
+      h("div",{class:"ts-meta"},
+        h("span",{class:"chip"+(x.due&&x.due<TODAY()&&!x.done?" late":x.due===TODAY()?" today":"")},"📅 "+whenLabel(x)),
+        rem?h("span",{class:"chip"},"⏰ "+rem):null,
+        x.delegate?h("span",{class:"chip",dir:"auto"},"→ "+x.delegate):null,
+        items.length?h("span",{class:"chip"},`☑ ${dn}/${items.length}`):null),
+      h("div",{class:"ts-actions"},
+        h("button",{type:"button",class:"btn"+(x.done?"":" primary"),onclick:()=>{ toggleTask(x); if(!x.done){ toast("✓ "+x.title); closeSheet(); } else refreshSheet(); }},svg("check"),x.done?t("reopen"):t("markDone")),
+        x.due ? h("a",{class:"btn",href:gcalUrl(x),target:"_blank",rel:"noopener",style:"text-decoration:none"},svg("cal"),t("addCal"))
+              : h("button",{type:"button",class:"btn",onclick:()=>{ document.getElementById("tDue")?.showPicker?.(); document.getElementById("tDue")?.focus(); }},svg("cal"),t("due"))),
+      h("div",{class:"ts-sec"},h("span",{class:"eyebrow"},t("details")),details),
+      said ? h("div",{class:"ts-sec"},
+        h("div",{class:"section-head"},h("span",{class:"eyebrow"},t("youSaid")),
+          voice&&voice.audioId?h("button",{type:"button",class:"btn ghost",style:"height:30px;font-size:13px;padding-inline:8px",onclick:async e=>{ e.currentTarget.remove(); try{ const b=await IDB.get(voice.audioId); if(b) audioBox.replaceChildren(h("audio",{controls:true,autoplay:true,src:URL.createObjectURL(b)})); }catch(err){} }},svg("play"),t("playVoice")):null),
+        h("div",{class:"quote",dir:"auto"},said), audioBox) : null,
+      h("div",{class:"ts-sec"},
         h("div",{class:"section-head"},h("span",{class:"eyebrow"},t("checklist")),items.length?h("span",{class:"small muted",style:"font-variant-numeric:tabular-nums"},`${dn} ${t("of")} ${items.length}`):null),
         items.length?h("div",{class:"progress"},h("i",{style:`width:${Math.round(dn/items.length*100)}%`})):null,
-        h("div",null,items.map((it,i)=>h("div",{class:"cl-item"+(it.done?" done":"")},
+        items.length?h("div",null,items.map((it,i)=>h("div",{class:"cl-item"+(it.done?" done":"")},
           checkBtn(it.done,()=>{ const n=items.map((v,j)=>j===i?{...v,done:!v.done}:v); patch(id,{items:n}).then(refreshSheet); }),
           h("span",{dir:"auto"},it.t),
-          h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>patch(id,{items:items.filter((_,j)=>j!==i)}).then(refreshSheet)},svg("x"))))),
+          h("button",{type:"button",class:"x","aria-label":t("del"),onclick:()=>patch(id,{items:items.filter((_,j)=>j!==i)}).then(refreshSheet)},svg("x"))))):null,
         h("form",{class:"row",style:"flex-wrap:nowrap",onsubmit:addStep},stepIn,h("button",{type:"submit",class:"btn"},t("add")))),
-      h("div",{class:"row",style:"justify-content:space-between"},
+      h("div",{class:"ts-sec"},h("span",{class:"eyebrow"},t("when")),
+        h("div",{class:"row",style:"flex-wrap:nowrap"},
+          h("label",{class:"fieldlbl grow"},h("span",{class:"small muted"},t("due")),
+            h("input",{type:"date",class:"field",id:"tDue",value:x.due||"",onchange:e=>patch(id,{due:e.target.value||null}).then(refreshSheet)})),
+          h("label",{class:"fieldlbl grow"},h("span",{class:"small muted"},t("time")),
+            h("input",{type:"time",class:"field",id:"tTime",value:x.time||"",onchange:e=>patch(id,{time:normTime(e.target.value)}).then(refreshSheet)}))),
+        h("div",{class:"row",style:"flex-wrap:nowrap"},
+          h("label",{class:"fieldlbl grow"},h("span",{class:"small muted"},t("reminder")),
+            h("select",{class:"field",id:"tRem",disabled:!x.due,onchange:e=>patch(id,{remind:+e.target.value}).then(refreshSheet)},
+              [[-1,"remNone"],[0,"remAt"],[10,"rem10"],[30,"rem30"],[60,"rem60"],[1440,"rem1d"]].filter(([v])=>x.time||[-1,0,1440].includes(v)).map(([v,k])=>h("option",{value:String(v),selected:remOf(x)===v},t(k==="remAt"&&!x.time?"remMorning":k))))),
+          h("label",{class:"fieldlbl grow"},h("span",{class:"small muted"},t("delegateTo")),
+            h("input",{class:"field",id:"tDel",dir:"auto",value:x.delegate||"",onchange:e=>patch(id,{delegate:e.target.value.trim()||null}).then(refreshSheet)})))),
+      h("div",{class:"ts-sec"},h("span",{class:"eyebrow"},t("priority")),
+        h("div",{class:"qmini"},Q.map(q=>h("button",{type:"button",style:`--qc:${qColor(q)}`,"aria-pressed":(x.q||2)===q?"true":"false",title:t("q"+q+"h"),onclick:()=>patch(id,{q}).then(refreshSheet)},t("q"+q))))),
+      h("div",{class:"row",style:"justify-content:space-between;padding-top:4px"},
         h("button",{type:"button",class:"btn",onclick:()=>{ const tops=all("task").filter(y=>y.top&&!y.done&&y.id!==id); if(!x.top && tops.length>=3){ patch(tops[tops.length-1].id,{top:false}); } patch(id,{top:!x.top}).then(refreshSheet); }},svg("star"),x.top?t("unstar"):t("starTop")),
         delBtn)
     ];
@@ -834,7 +952,7 @@ function viewCapture(){
         checkBtn(x.sel,()=>{x.sel=!x.sel;render();}),
         h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),
           h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due,x.time),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null),
-          x.reason?h("div",{class:"why",dir:"auto"},x.reason):null))),
+          x.details?h("div",{class:"why",dir:"auto"},x.details):x.reason?h("div",{class:"why",dir:"auto"},x.reason):null))),
       r.notes.map(n=>h("div",{class:"result"},checkBtn(n.sel,()=>{n.sel=!n.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("noteKind")),h("div",{dir:"auto",style:"margin-top:4px"},n.text)))),
       r.journal?h("div",{class:"result"},checkBtn(r.journal.sel,()=>{r.journal.sel=!r.journal.sel;render();}),h("div",{class:"grow"},h("span",{class:"chip"},t("journalKind")),h("div",{dir:"auto",style:"margin-top:4px"},r.journal.text))):null,
       h("button",{type:"button",class:"btn primary",onclick:addCaptured},t("addSel"))));
@@ -856,17 +974,17 @@ async function rewriteTasks(target, btn){
   if (btn){ btn.disabled=true; }
   try{
     for (let i=0;i<list.length;i+=25){
-      const chunk = list.slice(i,i+25).map(x=>({id:x.id,title:x.title,time:x.time||null,checklist:(x.items||[]).map(it=>it.t)}));
+      const chunk = list.slice(i,i+25).map(x=>({id:x.id,title:x.title,time:x.time||null,details:x.details||null,checklist:(x.items||[]).map(it=>it.t)}));
       if (btn) btn.textContent = (ar?"جاري التحويل… ":"Rewriting… ")+done+"/"+list.length;
       const res = await AI.json(`Rewrite these to-do items for a CEO in ${target==="ar"?"Arabic script. Keep people, company, product and technical names in English letters where they were English (e.g. \"Foodics\", \"Application\"); write common words in Arabic (\"Follow up with\" → \"متابعة مع\", \"Meeting with\" → \"اجتماع مع\", \"Call\" → \"اتصال بـ\", \"Review\" → \"مراجعة\").":"clear, short English."}
 If a title contains a clock time (e.g. "at 09:00", "الساعة ١٠"), remove it from the title and return it as "time" in 24-hour HH:MM; otherwise return the existing time.
 Keep the meaning exactly; do not add or drop items.
 Items: ${JSON.stringify(chunk)}
-Reply with only JSON: {"items":[{"id":"same id","title":"...","time":"HH:MM or null","checklist":["same number of steps, rewritten"]}]}`);
+Reply with only JSON: {"items":[{"id":"same id","title":"...","time":"HH:MM or null","details":"rewritten details or null","checklist":["same number of steps, rewritten"]}]}`);
       for (const it of (res.items||[])){
         const x=S.items.get(it.id); if(!x||!it.title) continue;
         const steps=Array.isArray(it.checklist)?it.checklist:[];
-        await patch(x.id,{title:String(it.title).trim(), time:normTime(it.time)||x.time||null, items:(x.items||[]).map((st,k)=>({...st,t:steps[k]?String(steps[k]):st.t}))});
+        await patch(x.id,{title:String(it.title).trim(), time:normTime(it.time)||x.time||null, details:it.details&&it.details!=="null"?String(it.details):(x.details||null), items:(x.items||[]).map((st,k)=>({...st,t:steps[k]?String(steps[k]):st.t}))});
         done++;
       }
     }
@@ -881,21 +999,23 @@ ${LANG_RULE}
 ${opt.import?`The text below is copied from another assistant or chat (for example a Meta AI conversation on WhatsApp, possibly a WhatsApp chat export with dates and sender names), or a list the CEO kept. Extract every meeting, appointment, schedule, task and reminder that is still upcoming or open. Skip anything clearly in the past (before ${TODAY()}) or marked done, skip the assistant's own small talk, and merge duplicates that appear more than once. For a meeting or reminder, put its clock time in "time" (e.g. title "Meeting with Mohamed Ragab", time "10:00"). For a recurring item (e.g. every Sunday), title it with the repetition and set the due date to the next occurrence. Keep useful background facts as notes.
 `:""}Organize the message below. Be brief: short task titles, no filler. ${taskLangRule()}
 Prioritize each task with the Eisenhower matrix: 1 = urgent and important (deadlines today or tomorrow, money, legal, clients, people crises), 2 = important not urgent (strategy, hiring, planning, health, relationships), 3 = urgent not important (routine requests someone else can handle; name a delegate if the message mentions one), 4 = neither.
-Resolve relative dates to YYYY-MM-DD. Split a task with several steps into a checklist. Merge repeated mentions of the same thing into one task. Ignore greetings, filler words and false starts.
+Resolve relative dates to YYYY-MM-DD. Split a task with several steps into a checklist.
+Keep every useful detail: put what is needed to act but is not in the title into "details" (1-3 short lines, same language as the title): the purpose, options mentioned (e.g. candidate days or times, resolved to real dates like "الثلاثاء ٢٧ أكتوبر أو الأربعاء ٢٨ أكتوبر"), people, amounts, places. Use null if there is nothing more. Copy the CEO's own words for each task from the message into "said".
+When the task is to arrange something on candidate days (e.g. "عايزين نكلم رفيق المفروض نحدد اجتماع تلات أو أربع"), make one task to do the arranging (e.g. title "اتصال برفيق لتحديد اجتماع"), due today unless the CEO says otherwise, with the candidate days in details. Merge repeated mentions of the same thing into one task. Ignore greetings, filler words and false starts.
 Message:
 """${text}"""
 Reply with only JSON:
-{"language":"english|arabic|franco|mixed","summary":"one short sentence","tasks":[{"title":"short imperative","quadrant":1,"due":"YYYY-MM-DD or null","time":"HH:MM 24-hour or null","checklist":["step"],"delegateTo":"name or null","reason":"why this quadrant, under 12 words"}],"notes":["information worth keeping that is not a task"],"journal":"personal reflection or feelings in the message, or null"}`);
+{"language":"english|arabic|franco|mixed","summary":"one short sentence","tasks":[{"title":"short imperative","quadrant":1,"due":"YYYY-MM-DD or null","time":"HH:MM 24-hour or null","details":"text or null","said":"the CEO's words for this task","checklist":["step"],"delegateTo":"name or null","reason":"why this quadrant, under 12 words"}],"notes":["information worth keeping that is not a task"],"journal":"personal reflection or feelings in the message, or null"}`);
   return {
     language:String(res.language||""), summary:String(res.summary||""),
-    tasks:(Array.isArray(res.tasks)?res.tasks:[]).map(x=>({title:String(x.title||"").trim(),quadrant:[1,2,3,4].includes(+x.quadrant)?+x.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:null,time:normTime(x.time),checklist:(Array.isArray(x.checklist)?x.checklist:[]).map(String).filter(Boolean),delegateTo:x.delegateTo&&x.delegateTo!=="null"?String(x.delegateTo):null,reason:String(x.reason||""),sel:true})).filter(x=>x.title),
+    tasks:(Array.isArray(res.tasks)?res.tasks:[]).map(x=>({title:String(x.title||"").trim(),quadrant:[1,2,3,4].includes(+x.quadrant)?+x.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:null,time:normTime(x.time),details:x.details&&x.details!=="null"?String(x.details).trim():null,said:x.said?String(x.said).trim():null,checklist:(Array.isArray(x.checklist)?x.checklist:[]).map(String).filter(Boolean),delegateTo:x.delegateTo&&x.delegateTo!=="null"?String(x.delegateTo):null,reason:String(x.reason||""),sel:true})).filter(x=>x.title),
     notes:(Array.isArray(res.notes)?res.notes:[]).map(s=>({text:String(s),sel:true})).filter(n=>n.text.trim()),
     journal:res.journal && res.journal!=="null" ? {text:String(res.journal),sel:true} : null };
 }
 /* Saves the selected parts of an organized result. Returns an undo function. */
-async function addOrganized(r, source){
+async function addOrganized(r, source, voiceId){
   const made=[]; let journalUndo=null; let n=0; const now=Date.now();
-  for (const x of r.tasks.filter(x=>x.sel)){ const id=uid("task"); made.push(id); await put(id,{kind:"task",title:x.title,q:x.quadrant,due:x.due,time:x.due?x.time:null,done:false,delegate:x.delegateTo,items:x.checklist.map(s=>({t:s,done:false})),source:String(source||"").slice(0,500),created:now+n++}); }
+  for (const x of r.tasks.filter(x=>x.sel)){ const id=uid("task"); made.push(id); await put(id,{kind:"task",title:x.title,q:x.quadrant,due:x.due,time:x.due?x.time:null,details:x.details||null,said:x.said||null,voiceId:voiceId||null,done:false,delegate:x.delegateTo,items:x.checklist.map(s=>({t:s,done:false})),source:String(source||"").slice(0,500),created:now+n++}); }
   for (const x of r.notes.filter(x=>x.sel)){ const id=uid("note"); made.push(id); await put(id,{kind:"note",type:"note",text:x.text,created:now+n++}); }
   if (r.journal && r.journal.sel){
     const td=TODAY(); const ex=all("note").find(j=>j.type==="journal"&&j.day===td);
@@ -926,6 +1046,7 @@ function calItem(x, showDay){
     h("div",{class:"cal-time"}, showDay?h("small",null,fmtDate(x.due,{weekday:"short",day:"numeric",month:"short"})):null, x.time?fmtTime(x.time):h("span",{class:"muted"},t("allDay"))),
     h("div",{class:"body",onclick:()=>openTask(x.id)},
       h("div",{class:"title",dir:"auto",style:"font-weight:500;overflow-wrap:anywhere"},x.title),
+      x.details?h("div",{class:"detail-line",dir:"auto"},x.details.split("\n")[0]):null,
       h("div",{class:"meta"},h("span",{class:"chip"},t("q"+(x.q||2))),x.delegate?h("span",{class:"chip",dir:"auto"},"→ "+x.delegate):null,(x.items||[]).length?h("span",{class:"chip"},`☑ ${(x.items||[]).filter(i=>i.done).length}/${x.items.length}`):null,remindAt(x)!=null&&x.time?h("span",{class:"chip"},"⏰ "+(remOf(x)?(remOf(x)>=60?(remOf(x)/60)+(ar?" س":"h"):remOf(x)+(ar?" د":"m")):(ar?"في الموعد":"on time"))):null)),
     checkBtn(false,()=>toggleTask(x)));
 }
@@ -1093,8 +1214,8 @@ Habits: ${JSON.stringify(all("habit").map(x=>({name:x.name,doneToday:!!(x.log||{
   const history=UI.chat.slice(0,-1).filter(m=>m.role!=="tool").slice(-12).map(m=>({role:m.role==="me"?"user":"assistant",content:m.text||"…"})).filter(m=>m.content);
   while(history.length && history[0].role!=="user") history.shift();
   const tools=[
-    {name:"add_task",description:"Add a task to the CEO's list.",inputSchema:{type:"object",properties:{title:{type:"string"},quadrant:{type:"integer",enum:[1,2,3,4]},due:{type:"string",description:"YYYY-MM-DD or empty"},time:{type:"string",description:"HH:MM 24-hour or empty"},checklist:{type:"array",items:{type:"string"}},delegateTo:{type:"string"}},required:["title","quadrant"]},
-      execute:async i=>{ const id=uid("task"); await put(id,{kind:"task",title:String(i.title),q:[1,2,3,4].includes(+i.quadrant)?+i.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(i.due||"")?i.due:null,time:normTime(i.time),delegate:i.delegateTo||null,items:(i.checklist||[]).map(s=>({t:String(s),done:false})),done:false,created:Date.now()}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"＋ "+i.title}); render(); return {ok:true,id}; }},
+    {name:"add_task",description:"Add a task to the CEO's list.",inputSchema:{type:"object",properties:{title:{type:"string"},quadrant:{type:"integer",enum:[1,2,3,4]},due:{type:"string",description:"YYYY-MM-DD or empty"},time:{type:"string",description:"HH:MM 24-hour or empty"},details:{type:"string",description:"context, options, people; empty if none"},checklist:{type:"array",items:{type:"string"}},delegateTo:{type:"string"}},required:["title","quadrant"]},
+      execute:async i=>{ const id=uid("task"); await put(id,{kind:"task",title:String(i.title),q:[1,2,3,4].includes(+i.quadrant)?+i.quadrant:2,due:/^\d{4}-\d{2}-\d{2}$/.test(i.due||"")?i.due:null,time:normTime(i.time),details:i.details||null,delegate:i.delegateTo||null,items:(i.checklist||[]).map(s=>({t:String(s),done:false})),done:false,created:Date.now()}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"＋ "+i.title}); render(); return {ok:true,id}; }},
     {name:"complete_task",description:"Mark one of the CEO's open tasks as done, by id.",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},
       execute:async i=>{ const x=S.items.get(i.id); if(!x||x.kind!=="task") throw new Error("No task with that id"); await patch(x.id,{done:true,doneAt:Date.now(),top:false}); UI.chat.splice(UI.chat.length-1,0,{role:"tool",text:"✓ "+x.title}); render(); return {ok:true}; }}
   ];
@@ -1240,7 +1361,7 @@ function openVoice(){
     V.state="thinking"; V.err=""; refreshSheet();
     try{
       V.result = await organize(V.final);
-      const res = await addOrganized(V.result, V.final);
+      const res = await addOrganized(V.result, V.final, V.voiceId);
       V.undo = res.undo; V.count = res.count;
       patch(V.voiceId,{organized:true,summary:V.result.summary});
       V.state="done";
@@ -1279,7 +1400,7 @@ function openVoice(){
         h("div",{class:"row",style:"gap:10px"},h("span",{class:"check on",style:"width:28px;height:28px"},svg("check")),h("div",{style:"font-weight:600;font-family:var(--f-display);font-size:17px"},ar?`تم. أضفت ${V.count} عنصر`:`Done. I added ${V.count} item${V.count===1?"":"s"}`)),
         r.summary?h("div",{class:"muted",dir:"auto"},r.summary):null));
       if (r.tasks.length) out.push(h("div",{class:"stack",style:"gap:8px"},r.tasks.map(x=>h("div",{class:"result",style:`--qc:${qColor(x.quadrant)}`},
-        h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),
+        h("div",{class:"grow"},h("div",{style:"font-weight:500",dir:"auto"},x.title),x.details?h("div",{class:"why",dir:"auto"},x.details):null,
           h("div",{class:"meta"},h("span",{class:"chip"},t("q"+x.quadrant)),dueChip(x.due,x.time),x.checklist.length?h("span",{class:"chip"},"☑ "+x.checklist.length):null,x.delegateTo?h("span",{class:"chip",dir:"auto"},"→ "+x.delegateTo):null))))));
       if (r.notes.length) out.push(h("div",{class:"small muted"},(ar?"ملاحظات محفوظة: ":"Notes saved: ")+r.notes.length));
       if (r.journal) out.push(h("div",{class:"small muted"},ar?"أضفت جزءاً إلى يومية اليوم.":"Added a line to today's journal."));
@@ -1325,7 +1446,7 @@ async function loadSample(){
   const td=TODAY(), now=Date.now(); const ar=lang==="ar";
   const rows=[
     {kind:"task",title:ar?"مراجعة التدفق النقدي للربع الرابع مع المدير المالي":"Review Q4 cash-flow forecast with the CFO",q:1,due:td,time:"11:00",top:true,items:[{t:ar?"طلب الأرقام المحدثة":"Request updated numbers",done:true},{t:ar?"مراجعة سيناريو سعر الصرف":"Check FX scenario",done:false},{t:ar?"اعتماد الخطة":"Sign off",done:false}]},
-    {kind:"task",title:ar?"الرد على عرض البنك بخصوص التمويل":"Reply to the bank's financing offer",q:1,due:addDays(td,-1),top:true,items:[]},
+    {kind:"task",title:ar?"الرد على عرض البنك بخصوص التمويل":"Reply to the bank's financing offer",q:1,due:addDays(td,-1),top:true,details:ar?"مقارنة الفائدة مع عرض CIB قبل الرد":"Compare the rate with the CIB offer before replying",items:[]},
     {kind:"task",title:ar?"تجهيز عرض مجلس الإدارة":"Prepare the board meeting deck",q:2,due:addDays(td,8),top:true,items:[{t:ar?"ملخص الأداء":"Performance summary",done:false},{t:ar?"خطة ٢٠٢٧":"2027 plan",done:false}]},
     {kind:"task",title:ar?"مقابلة مرشح مدير المبيعات":"Interview the sales director candidate",q:2,due:addDays(td,2),time:"13:30",items:[]},
     {kind:"task",title:ar?"تأكيد حجز فندق مؤتمر دبي":"Confirm hotel for the Dubai conference",q:3,due:addDays(td,1),time:"09:00",delegate:ar?"منى":"Mona",items:[]},
