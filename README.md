@@ -24,6 +24,14 @@ npm run expo:dev
 
 This starts the API and Expo together. Scan the QR code with Expo Go (SDK 58), or press `w` in the Expo terminal to open the web version. See [phone setup](docs/EXPO.md) for the API address, network setup, and testing.
 
+To let the website (and phones away from your Wi-Fi) use accounts, sync, and the assistant, run the server from your PC:
+
+```sh
+npm run server:online
+```
+
+It starts the API, opens a free Cloudflare tunnel, and saves the tunnel's address to the `server-address` branch, where the app looks it up. The address changes on every start; keep the window open while you use the app, and press Ctrl+C to stop it. The data lives on your PC in `data/my-pa.sqlite`.
+
 ```sh
 npm run check        # type checks, unit and API tests, API build
 npm run expo:check   # Expo type check

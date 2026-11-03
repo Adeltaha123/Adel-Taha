@@ -85,10 +85,27 @@ function apiOrigin() {
   if (__DEV__ && Platform.OS === 'web') return 'http://localhost:3001';
   return '';
 }
-export const origin = apiOrigin();
+const fixedOrigin = apiOrigin();
+export let origin = fixedOrigin;
+// Without a fixed address (the published website), use the address the owner's PC published with
+// npm run server:online. Its free tunnel address changes on every start, so it is looked up again after a failure.
+const SERVER_ADDRESS = 'https://raw.githubusercontent.com/Adeltaha123/Adel-Taha/server-address/server.json';
+let lookup:Promise<string>|null = null;
+async function currentOrigin() {
+  if (fixedOrigin) return fixedOrigin;
+  lookup ??= fetch(`${SERVER_ADDRESS}?t=${Date.now()}`, { cache:'no-store' })
+    .then(response => response.ok ? response.json() as Promise<{ api?:string|null }> : {})
+    .then((value:{ api?:string|null }) => (origin = (value.api ?? '').replace(/\/$/, '')))
+    .catch(() => '');
+  const found = await lookup;
+  if (!found) lookup = null;
+  return found;
+}
 const ar = () => state.language === 'ar';
+const offline = () => new Error(ar() ? 'خادم My PA غير متصل الآن. شغّله على الكمبيوتر بالأمر npm run server:online، أو تابع دون حساب.' : 'The My PA server is offline right now. Start it on your PC with npm run server:online, or continue offline.');
 export async function api<T>(path:string, body?:unknown, timeout=15000,signal?:AbortSignal):Promise<T> {
-  if (!origin) throw new Error(ar() ? 'لم يتم ضبط عنوان الخادم. أضف EXPO_PUBLIC_API_URL في mobile/.env ثم أعد تشغيل Expo.' : 'The server address is not set. Add EXPO_PUBLIC_API_URL to mobile/.env, then restart Expo.');
+  const origin = await currentOrigin();
+  if (!origin) throw offline();
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout);
   const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)controller.abort();
   try {
@@ -99,6 +116,7 @@ export async function api<T>(path:string, body?:unknown, timeout=15000,signal?:A
         ...(body === undefined ? {} : { body:JSON.stringify(body) }) });
     } catch (e) {
       if (signal?.aborted) throw e;
+      if (!fixedOrigin) { lookup = null; throw offline(); }
       throw new Error(ar() ? `تعذّر الوصول إلى خادم My PA على ${origin}. شغّل npm run expo:dev على الكمبيوتر وتأكد أن الهاتف على نفس شبكة Wi-Fi.` : `Can't reach the My PA server at ${origin}. Run npm run expo:dev on your computer and keep the phone on the same Wi-Fi.`);
     }
     const result = await response.json().catch(() => ({ error:'API returned an invalid response.' }));

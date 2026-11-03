@@ -1,6 +1,8 @@
 name: Check application
 on:
   push:
+    # server-address only holds the address published by npm run server:online.
+    branches-ignore: [server-address]
   pull_request:
 permissions:
   contents: read

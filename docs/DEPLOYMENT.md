@@ -18,7 +18,9 @@ The health endpoint is /api/health. Use SQLite-aware backups or stop the API bef
 
 ## Website
 
-The Publish web app workflow builds the Expo app for the browser and deploys it to GitHub Pages on every push to main (or manually from Actions). In the repository's Settings → Pages, Source must be GitHub Actions. Set the repository variable `EXPO_PUBLIC_API_URL` to the public HTTPS API origin (without /api) to enable accounts, sync, and the assistant on the website; without it the site works on each device only. This URL is public, never a secret.
+The Publish web app workflow builds the Expo app for the browser and deploys it to GitHub Pages on every push to main (or manually from Actions). In the repository's Settings → Pages, Source must be GitHub Actions.
+
+The website finds its API in one of two ways. If the repository variable `EXPO_PUBLIC_API_URL` is set to a public HTTPS API origin (without /api), that fixed address is built in. Otherwise the app reads `server.json` from the `server-address` branch, which `npm run server:online` writes each time it starts the API on the owner's PC behind a free Cloudflare quick tunnel. Quick tunnels are meant for light use: the PC must stay on with that command running, and Cloudflare does not guarantee their uptime. Move to a hosted API (above) and set the variable when that is no longer enough.
 
 To build the site locally: `npm run web:build` (output in mobile/dist).
 

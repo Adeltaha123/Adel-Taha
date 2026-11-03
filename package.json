@@ -8,6 +8,7 @@
   },
   "scripts": {
     "expo:dev": "node scripts/expo-dev.mjs",
+    "server:online": "node scripts/server-online.mjs",
     "expo:start": "npm --prefix mobile start",
     "expo:check": "npm --prefix mobile run typecheck",
     "web:build": "cd mobile && npx expo export --platform web --output-dir dist",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^22.0.0",
+    "cloudflared": "^0.7.3",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3"
   }
