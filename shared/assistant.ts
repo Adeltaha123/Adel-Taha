@@ -10,7 +10,7 @@ export interface AssistantAction {
 export interface AssistantReply { reply:string; actions:AssistantAction[] }
 
 /** Convert an explicitly approved proposal to the existing record contracts. */
-export function proposedRecord(action:AssistantAction,id:string,created:number):import('../src/types/domain.js').Task|import('../src/types/domain.js').Note {
+export function proposedRecord(action:AssistantAction,id:string,created:number):import('./domain.js').Task|import('./domain.js').Note {
   if (action.type === 'add_task') return { id,created,kind:'task',title:action.title,q:([1,2,3,4] as const).find(q => q === action.priority) ?? 2,done:false,due:action.due,time:action.time,items:[] };
   if (action.type === 'add_note') return { id,created,kind:'note',type:'note',text:action.title };
   throw new Error('Completion requires an existing task.');

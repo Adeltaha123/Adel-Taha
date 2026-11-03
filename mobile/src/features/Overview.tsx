@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Share, View, Text, Pressable } from 'react-native';
-import type { Task } from '../../../src/types/domain';
+import type { Task } from '../../../shared/domain';
 import { dayKey, focusRemaining, taskSummary } from '../../../shared/productivity';
 import { setFocus, useStore, reportError } from '../data/store';
 import { Button, Card, Eyebrow, Icon, Label, styles, useText, useTheme } from '../app/ui';

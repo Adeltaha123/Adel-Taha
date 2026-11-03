@@ -1,10 +1,10 @@
 # My PA assistant
 
-The Expo app has five tabs: Today, Tasks, Assistant, Library, and Account. Library contains notes, habits, and offline commands. The original web/Capacitor UI is a separate frontend.
+The Expo app has five tabs: Today, Tasks, Assistant, Library, and Account. Library contains notes, habits, and offline commands.
 
 ## Server setup
 
-Set `OPENAI_API_KEY` in the repository root `.env`, then rebuild/restart the API. Never put it in `mobile/.env`, a Vite variable, an Expo public variable, or source control. Revoke any key previously posted in chat and use a replacement. Sign in through Account before opening Assistant.
+Set `OPENAI_API_KEY` in the repository root `.env`, then rebuild/restart the API. Never put it in `mobile/.env`, an Expo public variable, or source control. Revoke any key previously posted in chat and use a replacement. Sign in through Account before opening Assistant.
 
 The default conversational model is `gpt-6-luna`; recorded speech uses `gpt-transcribe`. Override with server-only `OPENAI_MODEL` and `OPENAI_TRANSCRIBE_MODEL` if your account requires another compatible model. Chat requires Responses API structured JSON output support. See the [model documentation](https://developers.openai.com/api/docs/models/gpt-6-luna) and [speech-to-text guide](https://developers.openai.com/api/docs/guides/speech-to-text). Model access, billing and a working key must be verified against your account; mocked tests do not establish them.
 
@@ -18,4 +18,4 @@ The default conversational model is `gpt-6-luna`; recorded speech uses `gpt-tran
 
 ## Testing
 
-Run `npm run check`, `npm run test:e2e`, `npm run expo:check`, and `npm run test:expo`. The assistant API tests inject a mocked OpenAI transport. Browser tests use a simulated microphone and mocked AI responses to check transcript review, explicit application, undo, and retry behavior. Physical iOS/Android microphone permissions, interruptions, speech playback, and live model quality still require device/account testing.
+Run `npm run check`, `npm run expo:check`, and `npm run test:expo`. The assistant API tests inject a mocked OpenAI transport. Browser tests use a simulated microphone and mocked AI responses to check transcript review, explicit application, undo, and retry behavior. Physical iOS/Android microphone permissions, interruptions, speech playback, and live model quality still require device/account testing.

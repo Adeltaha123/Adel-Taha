@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">My PA</string>
-    <string name="title_activity_main">My PA</string>
-    <string name="package_name">com.adeltaha.mypa</string>
-    <string name="custom_url_scheme">com.adeltaha.mypa</string>
-</resources>

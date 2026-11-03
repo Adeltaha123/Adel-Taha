@@ -1,49 +1,47 @@
 # My PA
 
-A local-first personal assistant for iOS, Android, and web with English/Arabic and RTL support. The new interface uses React + TypeScript, Capacitor packages both mobile apps, and one Node.js/TypeScript backend serves all clients. No Python is required.
+A local-first personal assistant for iPhone, Android, and the web, with English/Arabic and RTL support. One Expo (React Native) app in `mobile/` runs on phones and is built for the browser; one Node.js/TypeScript API in `server/` serves accounts, sync, and the AI assistant. No Python is required.
+
+Website: <https://adeltaha123.github.io/Adel-Taha/>
 
 ## Features
 
-- Tasks, search, priority matrix, checklists, undo, notes, calendar, journal, and habits.
-- Accounts, cloud synchronization, offline edits, conflict resolution, and personal/team workspaces.
-- Teams with single-use invitations and task assignment.
-- Expo Assistant: server-backed AI chat, voice transcription, device speech playback, and reviewed task/note suggestions. See [setup and privacy](docs/ASSISTANT.md).
-- Expo login/register, automatic SQLite synchronization, Arabic-first setup, calendar/time selection, and local task check-ins with snooze. See [reminders and saving](docs/TASK-CHECKINS.md).
-- English/Arabic command previews through typed input or the existing voice flow.
-- Native scheduled reminders, quiet hours, and overdue rescheduling. Browser reminders require the app to be running.
+- Today overview, tasks with search, priority matrix, checklists, schedules, assignment and undo; notes and habits.
+- 4-digit PIN lock, with optional unlock like the phone itself: Face ID, fingerprint, or the phone's own PIN. On the website the browser's Face ID / fingerprint login is used where available.
+- Accounts, automatic sync, offline edits, conflict resolution, and personal/team workspaces with single-use invitations.
+- Assistant: server-backed AI chat, voice transcription, speech playback, and reviewed task/note suggestions. See [setup and privacy](docs/ASSISTANT.md).
+- English/Arabic typed commands that work offline, and local task check-ins with snooze. See [reminders and saving](docs/TASK-CHECKINS.md).
 
 ## Run
 
-For **Expo Go SDK 58**, use the React Native app in `mobile/`. Run `npm ci --prefix mobile`, then `npm run expo:start` and scan the QR code with a matching Expo Go build. See [phone setup and feature coverage](docs/EXPO.md) for the shared backend URL, network setup, and native testing instructions.
-
-Use Node.js 22.15 or newer:
+Use Node.js 22.15 or newer. On Windows use `npm.cmd` if PowerShell blocks `npm`.
 
 ```sh
 npm ci
-npm run dev
+npm ci --prefix mobile
+npm run expo:dev
 ```
 
-This starts the frontend and API. Open the Vite URL, choose a device PIN, and register in Account for optional sync. Importing existing device records is explicit. On Windows use npm.cmd if PowerShell blocks npm.ps1.
+This starts the API and Expo together. Scan the QR code with Expo Go (SDK 58), or press `w` in the Expo terminal to open the web version. See [phone setup](docs/EXPO.md) for the API address, network setup, and testing.
 
 ```sh
-npm run check
-npx playwright install chromium
-npm run test:e2e
-npm run mobile:sync
-npm run android:open
-npm run ios:open
+npm run check        # type checks, unit and API tests, API build
+npm run expo:check   # Expo type check
+npm run test:expo    # browser tests of the Expo web build
+npm run web:build    # website build in mobile/dist
 ```
-
-The last command requires macOS/Xcode. Signed release packages and store listings have not been produced.
 
 ## Structure
 
-Feature screens live in src/features, the React shell in src/app, sync in src/cloud, persistence in src/data, and device adapters in src/platform. server contains the shared API and SQLite database layer; shared contains API contracts. android and ios contain native projects. tests includes regression, API, command/reminder, and Chromium scenarios.
+- `mobile/` — the app: screens in `mobile/src/features`, shell and UI kit in `mobile/src/app`, local storage and sync in `mobile/src/data`, device adapters (lock, notifications, voice) in `mobile/src/platform`. Files ending in `.web.ts` replace their neighbours in the browser build.
+- `server/` — the API and SQLite database layer.
+- `shared/` — code used by both: data types (`domain.ts`), API contracts, sync, commands, check-ins, assistant contracts.
+- `tests/` — unit/API tests and the Expo browser scenarios.
 
-React migration is incremental: the shell, tasks, accounts, commands, and reminders use React; established screens retain modular JavaScript. See [architecture](docs/ARCHITECTURE.md), [deployment](docs/DEPLOYMENT.md), and [mobile setup](docs/MOBILE.md).
+See [architecture](docs/ARCHITECTURE.md) and [deployment](docs/DEPLOYMENT.md).
 
 ## Limits
 
-Cloud sync includes text records and assignments; audio and personal provider keys stay on the device. The PIN gates the interface without encrypting storage. On phones it can also be unlocked like the phone itself: Face ID, fingerprint, or the phone's own PIN. Server passwords are hashed; sessions last 24 hours and use client session storage. Email verification, password recovery, and account deletion are not implemented.
+The PIN hides the app from other people; it does not encrypt stored data. Cloud sync covers text records and assignments, not audio. Server passwords are hashed and sessions last 24 hours. Email verification, password recovery, and account deletion are not implemented.
 
-Native microphone, background delivery, biometrics, sharing, and installation still need device testing. Optional AI/transcription requires provider configuration and internet.
+The website works on each device without an account. Accounts, sync, and the assistant need the API hosted somewhere public (GitHub Pages only hosts the website). Microphone, notifications, and Face ID still need testing on real phones; signed store builds have not been produced.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {checkInTime,scheduleKey,upcomingCheckIns} from '../shared/checkins.js';
 import {recordSchema} from '../server/records.js';
 import {mutationsFor} from '../shared/sync.js';
-import type {Task} from '../src/types/domain.js';
+import type {Task} from '../shared/domain.js';
 test('check-ins respect due times, completion, snooze, dismissal and schedule changes',()=>{
   const task:Task={id:'t',kind:'task',title:'Review',q:2,done:false,items:[],due:'2026-10-30',time:'09:00'};
   const due=new Date('2026-10-30T09:00:00').getTime();

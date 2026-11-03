@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
-test.beforeEach(async({page})=>{await page.addInitScript(()=>{if(!localStorage.getItem('mypa_expo_v1'))localStorage.setItem('mypa_expo_v1',JSON.stringify({scopes:{guest:{records:{},baseline:{},conflicts:[]}},language:'en',focusEnd:null}));});});
+import { test, expect, type Page } from '@playwright/test';
+import { createHash } from 'node:crypto';
+// Every test starts with PIN 1234 set and a recent unlock, so the lock screen only appears in its own test.
+const PIN='test:'+createHash('sha256').update('test:1234').digest('hex');
+test.beforeEach(async({page})=>{await page.addInitScript(pin=>{if(!localStorage.getItem('mypa_expo_v1'))localStorage.setItem('mypa_expo_v1',JSON.stringify({scopes:{guest:{records:{},baseline:{},conflicts:[]}},language:'en',focusEnd:null}));if(!localStorage.getItem('mypa_pin'))localStorage.setItem('mypa_pin',pin);sessionStorage.setItem('mypa_unlocked_at',String(Date.now()));},PIN);});
 test('fresh install opens Arabic login and exposes Arabic voice input',async({page})=>{
   await page.addInitScript(()=>localStorage.removeItem('mypa_expo_v1'));
   await page.goto('/');await expect(page.getByText('أهلاً بعودتك',{exact:true})).toBeVisible();
@@ -212,4 +215,14 @@ test('naming the assistant at sign-up shows My PA Sara and survives signing in a
   await page.getByLabel('Password (10+ characters)',{exact:true}).fill('long-password-123');
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await expect(page.getByLabel('My PA Sara',{exact:true})).toBeVisible();
+});
+test('the app asks for a new PIN once, then locks again and accepts only that PIN',async({page})=>{
+  await page.addInitScript(()=>{if(!sessionStorage.getItem('lock_test')){sessionStorage.setItem('lock_test','1');localStorage.removeItem('mypa_pin');}sessionStorage.removeItem('mypa_unlocked_at');});
+  const type=async(page:Page,pin:string)=>{for(const d of pin)await page.getByRole('button',{name:d,exact:true}).click();};
+  await page.goto('/');await expect(page.getByText('Secure your assistant',{exact:true})).toBeVisible();
+  await type(page,'1234');await expect(page.getByText('Enter the PIN again',{exact:true})).toBeVisible();
+  await type(page,'1234');await expect(page.getByText('Continue offline',{exact:true})).toBeVisible();
+  await page.reload();await expect(page.getByText('Enter your PIN',{exact:true})).toBeVisible();
+  await type(page,'9999');await expect(page.getByText('Wrong PIN',{exact:true})).toBeVisible();
+  await type(page,'1234');await expect(page.getByText('Continue offline',{exact:true})).toBeVisible();
 });

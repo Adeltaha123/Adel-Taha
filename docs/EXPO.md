@@ -1,6 +1,6 @@
 # Expo Go (SDK 58)
 
-The new React Native application is in `mobile/`. The repository root remains the existing web/Capacitor app and shared TypeScript API. Do not run Expo in the root or copy the Capacitor android/ios folders into mobile.
+My PA is the React Native application in `mobile/`. The same app is published as the website. The repository root holds the shared TypeScript API, shared code, and tests. Do not run Expo in the root.
 
 ## Open on a phone
 
@@ -20,19 +20,18 @@ Scan the terminal QR with Expo Go on Android or the iPhone Camera. The computer 
 
 If the default Metro port is occupied, run `npm --prefix mobile start -- --port 8083`. A tunnel for Metro does not automatically expose the API. Use a reachable HTTPS API when testing over different networks.
 
-Local tasks, notes, habits, commands, overview, and focus timer work without configuring an API. Account, team, and AI features need it. New installations start in Arabic on a dedicated login/register page; Continue offline preserves guest access. Native credentials use SecureStore; browser-preview sessions are memory-only. Records use a separate AsyncStorage key and do not overwrite the original web app's storage. Log in and explicitly import device records to transfer them into a workspace. Signing in selects the personal workspace automatically. Previously saved native sessions restore their last cached workspace. Device records stay separate until explicitly imported. Edits queue database synchronization after one second; foreground polling and a manual sync button provide retries. Offline pending edits remain on the device.
+Local tasks, notes, habits, commands, overview, and focus timer work without configuring an API. Account, team, and AI features need it. New installations start in Arabic on a dedicated login/register page; Continue offline preserves guest access. Native credentials use SecureStore; browser sessions are memory-only. Records use their own AsyncStorage key. Log in and explicitly import device records to transfer them into a workspace. Signing in selects the personal workspace automatically. Previously saved native sessions restore their last cached workspace. Device records stay separate until explicitly imported. Edits queue database synchronization after one second; foreground polling and a manual sync button provide retries. Offline pending edits remain on the device.
 
 ## Features and current boundary
 
 Native screens include a daily overview, workload counts, shareable summary, focus timer, task search/filtering/editing/checklists/assignment/undo, notes, habit check-ins, English/Arabic command previews, accounts, teams, invitations, and conflict resolution. The timer survives backgrounding by storing its end time; it does not send a background alarm.
 
-This is a native frontend alongside the existing web app, not full feature parity. Calendar export has not been ported to Expo. Expo has its own 4-digit PIN lock (salted hash in SecureStore) with optional phone unlock through expo-local-authentication: Face ID, fingerprint, or the phone's own PIN/passcode. Expo web stays unlocked because it has no keychain, and Expo Go cannot show the app's Face ID permission, so test Face ID in a development build. Expo has its own local scheduled task check-ins. The new Assistant has a separate server-backed chat and voice workflow. Expo Go cannot load Capacitor plugins. Those features remain in the web/Capacitor app. Shared domain types, command parsing, synchronization and dashboard calculations avoid duplicate business logic.
+Calendar export is not available. The app has a 4-digit PIN lock with optional phone unlock (Face ID, fingerprint, or the phone's own PIN/passcode); on the website, the browser's Face ID / fingerprint login is used where available. Expo Go cannot show the app's own Face ID permission text, so test Face ID in a development build. Task check-ins are local scheduled notifications. The Assistant uses a server-backed chat and voice workflow.
 
 ## Verification
 
 ```sh
 npm run check
-npm run test:e2e
 npm run expo:check
 cd mobile
 npx expo install --check
@@ -40,15 +39,8 @@ npx expo-doctor
 npm run export
 ```
 
-Run npm run test:expo from the root for Expo browser integration tests. The script builds the web preview with a disposable test API URL and starts a temporary API/static server. It does not change mobile/.env. The exported web preview is for tests; build again with your real API URL before distributing it.
+Run npm run test:expo from the root for Expo browser integration tests. The script builds the web preview with a disposable test API URL and starts a temporary API/static server. It does not change mobile/.env. The exported web preview is for tests; the website is built by the Publish web app workflow (see DEPLOYMENT.md).
 
 Type checks and Android/iOS JavaScript exports do not prove hardware behavior. Test the SDK 58 project in Expo Go on both phones before release. Expo Go is a development client; signed store apps require separate build and release steps.
-
-## Validation recorded on 2026-10-30
-
-- 21 regression/API tests and three existing web browser scenarios passed. Five Expo browser scenarios passed, covering Arabic login, account autosave and re-login, calendar/time selection, snoozing, offline data, and voice. Expo coverage includes a simulated microphone, editable transcription, AI proposal review, apply-once behavior, undo, and request failure recovery. OpenAI responses were mocked; live account access was not tested.
-- Native TypeScript and Expo SDK dependency checks passed. Android and iOS Hermes bundles exported successfully, separately, with `NODE_OPTIONS=--max-old-space-size=256` and `--no-minify` on this 4 GB Windows PC.
-- Expo Doctor finished with one unresolved check: fetching Expo's online configuration schema failed during TLS connection establishment. The other checks passed. Rerun Doctor when that connection is available.
-- No physical iPhone/Android Expo Go session or signed native build was verified. Physical microphone, speaker, notification permissions, and scheduled delivery still require device testing.
 
 On a memory-constrained PC, keep tests and exports serial. Metro is configured for one worker. For a lower-memory native bundle check, run `node node_modules/expo/bin/cli export --platform android --no-minify --output-dir dist-android` from mobile with NODE_OPTIONS set to --max-old-space-size=256, then repeat for ios. These are validation bundles, not signed distribution packages.

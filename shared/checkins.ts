@@ -1,4 +1,4 @@
-import type { Task } from '../src/types/domain.js';
+import type { Task } from './domain.js';
 import { validDay } from './productivity.js';
 export const scheduleKey = (task:Task) => `${task.due ?? ''}T${task.time ?? ''}`;
 export function checkInTime(task:Task):number|null {

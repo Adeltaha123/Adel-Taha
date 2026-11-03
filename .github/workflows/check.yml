@@ -13,14 +13,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
       - run: npm ci
       - run: npm run check
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
       - run: npm ci --prefix mobile
       - run: npm run expo:check
       - run: npx expo install --check
         working-directory: mobile
       - run: npm run export
         working-directory: mobile
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:expo

@@ -7,7 +7,7 @@ import { SocialSignIn } from './SocialSignIn';
 import { AssistantNameField } from './AssistantName';
 import { setAssistantName } from '../data/store';
 import { cleanAssistantName } from '../../../shared/assistant';
-import { changePin, lockNow, lockSupported, setPhoneUnlock, useLock } from '../platform/lock';
+import { changePin, lockNow, setPhoneUnlock, useLock } from '../platform/lock';
 export function Account() {
   const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[team,setTeam] = useState(''),[code,setCode] = useState(''),[invite,setInvite] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[assistant,setAssistant] = useState(s.assistantName);
   const busy = working || s.busy;
@@ -16,7 +16,7 @@ export function Account() {
   useEffect(() => setInvite(''),[s.scope]);
   useEffect(() => setAssistant(s.assistantName),[s.assistantName]); // The saved name can arrive after this screen opens.
   return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Label big>{t('Account & team','الحساب والفريق')}</Label>
-    {lockSupported && <Security/>}
+    <Security/>
     {!s.session ? <Card><Label>{t('Optional: sign in to sync across devices. Local features work without an account.','اختياري: سجّل الدخول للمزامنة. تعمل المهام المحلية بدون حساب.')}</Label>
       <SocialSignIn/>
       {register && <Field label={t('Name','الاسم')} value={name} onChangeText={setName} maxLength={80}/>}{register && <AssistantNameField value={assistant} onChange={setAssistant}/>}

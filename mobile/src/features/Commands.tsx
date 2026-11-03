@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { randomUUID } from 'expo-crypto';
-import type { Task } from '../../../src/types/domain';
-import { parseCommand, type Command } from '../../../src/features/commands/parser';
+import type { Task } from '../../../shared/domain';
+import { parseCommand, type Command } from '../../../shared/commands';
 import { put, useStore } from '../data/store';
 import { Button, Card, Field, Label, styles, useText } from '../app/ui';
 export function Commands() {

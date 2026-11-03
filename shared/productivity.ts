@@ -1,4 +1,4 @@
-import type { Task } from '../src/types/domain.js';
+import type { Task } from './domain.js';
 export const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 export function validDay(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;

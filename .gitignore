@@ -16,19 +16,11 @@ coverage/
 build-api/
 test-results/
 playwright-report/
-android/app/src/main/assets/public/
-android/app/src/main/assets/capacitor.config.json
-android/app/src/main/assets/capacitor.plugins.json
-ios/App/App/public/
-ios/App/App/capacitor.config.json
-ios/App/App/config.xml
-android/.gradle/
-android/local.properties
-android/**/build/
-android/captures/
+# Expo generates native projects on demand (expo prebuild / EAS); keep them and signing files out of Git.
+mobile/android/
+mobile/ios/
 *.jks
 *.keystore
-ios/App/Pods/
-ios/App/build/
-ios/**/xcuserdata/
+*.p8
+*.p12
 *.mobileprovision

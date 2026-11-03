@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import type { Task, Language } from '../../../src/types/domain';
+import type { Task, Language } from '../../../shared/domain';
 import { upcomingCheckIns, scheduleKey } from '../../../shared/checkins';
 let queue=Promise.resolve();
 async function notifications() { return await import('expo-notifications'); }

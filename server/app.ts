@@ -26,7 +26,7 @@ class HttpError extends Error { constructor(public statusCode: number, message: 
 export async function createApi(options: { databasePath?: string; origins?: string[]; rateLimit?: boolean; assistant?:AssistantOptions;oauth?:OAuthOptions } = {}) {
   const db = openDatabase(options.databasePath ?? 'data/my-pa.sqlite');
   const app = Fastify({ bodyLimit: 2 * 1024 * 1024, logger: false });
-  const origins = options.origins ?? ['http://localhost:5173', 'http://127.0.0.1:5173', 'capacitor://localhost', 'https://localhost', 'http://localhost'];
+  const origins = options.origins ?? ['http://localhost:8081', 'http://127.0.0.1:8081', 'https://adeltaha123.github.io'];
   await app.register(cors, { origin: origins, methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'Authorization'] });
   if (options.rateLimit !== false) await app.register(rateLimit, { max: 180, timeWindow: '1 minute' });
   app.addHook('onClose', async () => db.close());

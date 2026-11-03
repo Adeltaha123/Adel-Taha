@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, ScrollView, View, Pressable, Text, TextInput } from 'react-native';
 import { randomUUID } from 'expo-crypto';
-import type { Task } from '../../../../src/types/domain';
+import type { Task } from '../../../../shared/domain';
 import { validDay, dayKey } from '../../../../shared/productivity';
 import { put, remove, useStore } from '../../data/store';
 import { Button, Chip, Field, Icon, IconButton, Label, Notice, Page, styles, useText, useTheme } from '../../app/ui';

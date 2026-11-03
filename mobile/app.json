@@ -13,7 +13,13 @@
       "package": "com.adeltaha.mypa.expo"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "My PA",
+      "shortName": "My PA",
+      "themeColor": "#14201C",
+      "backgroundColor": "#14201C"
     },
     "plugins": [
       "expo-notifications",
@@ -32,6 +38,7 @@
           "faceIDPermission": "اسمح لـ My PA بفتح التطبيق ببصمة الوجه، بنفس طريقة فتح هاتفك."
         }
       ]
-    ]
+    ],
+    "icon": "./assets/icon.png"
   }
 }

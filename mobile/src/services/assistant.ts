@@ -1,5 +1,5 @@
 import {api,origin} from '../data/store';
-import type {Language} from '../../../src/types/domain';
+import type {Language} from '../../../shared/domain';
 import type {AssistantReply} from '../../../shared/assistant';
 import {dayKey} from '../../../shared/productivity';
 import type {recordingPayload} from '../platform/voice';

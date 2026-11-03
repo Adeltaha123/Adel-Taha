@@ -6,7 +6,7 @@ import { proposedRecord } from '../../../shared/assistant';
 import type { AssistantReply, AssistantAction } from '../../../shared/assistant';
 import { dayKey } from '../../../shared/productivity';
 import { api, put, useStore } from '../data/store';
-import type { Conversation } from '../../../src/types/domain';
+import type { Conversation } from '../../../shared/domain';
 import { voiceStatus } from '../services/assistant';
 import { VoiceInput } from './VoiceInput';
 import { Button, Card, Chip, Eyebrow, Field, IconButton, Label, Notice, styles, useText, useTheme } from '../app/ui';

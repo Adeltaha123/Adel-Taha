@@ -1,17 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "jsx": "react-jsx",
-    "allowJs": true,
-    "checkJs": false,
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["vite/client", "node"]
+    "types": ["node"]
   },
-  "include": ["src", "shared", "vite.config.ts", "capacitor.config.ts"]
+  "include": ["shared", "tests", "playwright.expo.config.ts"]
 }

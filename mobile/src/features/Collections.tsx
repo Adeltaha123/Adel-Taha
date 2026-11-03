@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { randomUUID } from 'expo-crypto';
-import type { Note, Habit } from '../../../src/types/domain';
+import type { Note, Habit } from '../../../shared/domain';
 import { dayKey } from '../../../shared/productivity';
 import { put, remove, useStore } from '../data/store';
 import { Button, Card, Field, Label, styles, useText } from '../app/ui';

@@ -1,6 +1,6 @@
 import { useEffect,useState } from 'react';
 import { AppState, View } from 'react-native';
-import type { Task } from '../../../src/types/domain';
+import type { Task } from '../../../shared/domain';
 import { checkInTime, scheduleKey } from '../../../shared/checkins';
 import { put,useStore } from '../data/store';
 import { enableReminders,scheduleCheckIns } from '../platform/notifications';

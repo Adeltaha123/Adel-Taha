@@ -17,15 +17,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: mobile/package-lock.json
       - uses: actions/configure-pages@v5
-      - run: npm ci
-      # The Check application workflow runs the full test suite; publishing only needs the build.
-      - run: npm run build
+      - run: npm ci --prefix mobile
+      # The website is the Expo app built for the browser. GitHub Pages serves it from /<repository>.
+      - run: npx expo export --platform web --output-dir dist
+        working-directory: mobile
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          EXPO_BASE_URL: /${{ github.event.repository.name }}
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: mobile/dist
   deploy:
     needs: build
     runs-on: ubuntu-latest
