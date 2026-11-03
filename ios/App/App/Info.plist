@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Unlock My PA with Face ID, the same way you unlock your phone.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record voice notes for your personal assistant.</string>
 	<key>UIApplicationSceneManifest</key>

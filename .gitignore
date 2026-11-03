@@ -12,7 +12,7 @@ mobile/dist-ios/
 .idea/
 .vscode/
 coverage/
-data/
+/data/
 build-api/
 test-results/
 playwright-report/

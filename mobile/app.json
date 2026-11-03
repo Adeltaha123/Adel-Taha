@@ -25,7 +25,13 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "اسمح لـ My PA بفتح التطبيق ببصمة الوجه، بنفس طريقة فتح هاتفك."
+        }
+      ]
     ]
   }
 }

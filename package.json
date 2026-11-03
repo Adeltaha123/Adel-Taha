@@ -33,6 +33,7 @@
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
     "@capacitor/local-notifications": "^8.3.1",
+    "@capgo/capacitor-native-biometric": "^8.9.1",
     "@fastify/cors": "^11.3.1",
     "@fastify/rate-limit": "^11.2.1",
     "fastify": "^5.12.7",

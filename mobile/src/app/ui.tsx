@@ -24,6 +24,8 @@ export const icons = {
   sun:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   speaker:'M4 9h4l5-4v14l-5-4H4ZM17 9a4 4 0 0 1 0 6',
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4',
+  finger:'M12 11v3a7 7 0 0 1-1.5 4.3M8.5 7.5A5 5 0 0 1 17 11v1.5a12 12 0 0 1-.8 4.3M5.6 9.6A7 7 0 0 1 19 11v1M8 13.5a10 10 0 0 1-1.6 4.8M14.5 13.5a14 14 0 0 1-1.2 5.5M4 6.5A9.5 9.5 0 0 1 21 9',
+  back:'M15 6l-6 6 6 6',
 };
 export function Icon({ name, size=22, color, width=1.8 }: { name:keyof typeof icons; size?:number; color:string; width?:number }) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d={icons[name]} stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round"/></Svg>;

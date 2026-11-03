@@ -26,7 +26,7 @@ Local tasks, notes, habits, commands, overview, and focus timer work without con
 
 Native screens include a daily overview, workload counts, shareable summary, focus timer, task search/filtering/editing/checklists/assignment/undo, notes, habit check-ins, English/Arabic command previews, accounts, teams, invitations, and conflict resolution. The timer survives backgrounding by storing its end time; it does not send a background alarm.
 
-This is a native frontend alongside the existing web app, not full feature parity. Calendar export and PIN/biometrics have not been ported to Expo. Expo has its own local scheduled task check-ins. The new Assistant has a separate server-backed chat and voice workflow. Expo Go cannot load Capacitor plugins. Those features remain in the web/Capacitor app. Shared domain types, command parsing, synchronization and dashboard calculations avoid duplicate business logic.
+This is a native frontend alongside the existing web app, not full feature parity. Calendar export has not been ported to Expo. Expo has its own 4-digit PIN lock (salted hash in SecureStore) with optional phone unlock through expo-local-authentication: Face ID, fingerprint, or the phone's own PIN/passcode. Expo web stays unlocked because it has no keychain, and Expo Go cannot show the app's Face ID permission, so test Face ID in a development build. Expo has its own local scheduled task check-ins. The new Assistant has a separate server-backed chat and voice workflow. Expo Go cannot load Capacitor plugins. Those features remain in the web/Capacitor app. Shared domain types, command parsing, synchronization and dashboard calculations avoid duplicate business logic.
 
 ## Verification
 

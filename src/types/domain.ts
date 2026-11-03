@@ -52,6 +52,8 @@ export interface Settings extends RecordBase {
   kind: 'settings';
   pinHash?: string;
   bioId?: string;
+  /** Native builds: unlock with Face ID, fingerprint or the phone's own PIN. */
+  phoneUnlock?: boolean;
   lang?: Language;
 }
 export type StoredRecord = Task | Note | Habit | VoiceNote | Settings;

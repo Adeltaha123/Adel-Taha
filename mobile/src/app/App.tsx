@@ -15,13 +15,15 @@ import { Assistant } from '../features/Assistant';
 import { Login } from '../features/Login';
 import { CheckIns } from '../features/CheckIns';
 import { AssistantNamePrompt } from '../features/AssistantName';
+import { Lock } from '../features/Lock';
+import { initializeLock, useLock } from '../platform/lock';
 type Tab = 'overview'|'tasks'|'assistant'|'library'|'account';
 const tabs:[Tab,keyof typeof icons,string,string][] = [['overview','overview','Today','اليوم'],['tasks','tasks','Tasks','المهام'],['assistant','assistant','Assistant','المساعد'],['library','library','Library','المكتبة'],['account','account','Account','الحساب']];
 export default function App() { return <SafeAreaProvider><Shell/></SafeAreaProvider>; }
 function Shell() {
-  const s = useStore(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false);
+  const s = useStore(), lock = useLock(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false);
   useEffect(()=>{if(s.session)setGuest(false);},[s.session]);
-  useEffect(() => { void initialize(); const interval = setInterval(() => { if (AppState.currentState === 'active') void sync().catch(() => {}); },30000);
+  useEffect(() => { void initialize(); void initializeLock(); const interval = setInterval(() => { if (AppState.currentState === 'active') void sync().catch(() => {}); },30000);
     const listener = AppState.addEventListener('change',value => { if (value === 'active') void sync().catch(() => {}); });
     return () => { clearInterval(interval); listener.remove(); };
   },[]);
@@ -47,5 +49,6 @@ function Shell() {
       {tabs.slice(2).map(tabButton)}</View>}
     {voice && <VoiceTask close={() => setVoice(false)}/>}
     {s.session && s.askName && <AssistantNamePrompt/>}
-  </KeyboardAvoidingView></Page>;
+  </KeyboardAvoidingView>
+    {lock.mode === 'loading' ? <View style={{ position:'absolute',top:0,bottom:0,left:0,right:0,zIndex:100,backgroundColor:c.bg }}/> : lock.mode !== 'open' && <Lock key={lock.mode}/>}</Page>;
 }

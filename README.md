@@ -44,6 +44,6 @@ React migration is incremental: the shell, tasks, accounts, commands, and remind
 
 ## Limits
 
-Cloud sync includes text records and assignments; audio and personal provider keys stay on the device. The PIN gates the interface without encrypting storage. Server passwords are hashed; sessions last 24 hours and use client session storage. Email verification, password recovery, and account deletion are not implemented.
+Cloud sync includes text records and assignments; audio and personal provider keys stay on the device. The PIN gates the interface without encrypting storage. On phones it can also be unlocked like the phone itself: Face ID, fingerprint, or the phone's own PIN. Server passwords are hashed; sessions last 24 hours and use client session storage. Email verification, password recovery, and account deletion are not implemented.
 
 Native microphone, background delivery, biometrics, sharing, and installation still need device testing. Optional AI/transcription requires provider configuration and internet.

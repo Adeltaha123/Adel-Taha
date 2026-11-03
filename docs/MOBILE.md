@@ -51,7 +51,7 @@ Both platforms use the same backend. Set VITE_API_URL to its public HTTPS origin
 | Tasks, notes, habits, journal | Local browser-compatible records | Test persistence, lifecycle, keyboard, RTL and upgrades on both platforms. |
 | Voice | Web Speech / MediaRecorder and provider transcription | Validate microphone permissions and audio formats; add a native speech/recording adapter where browser support is insufficient. |
 | Reminders | Native scheduled notifications, quiet hours, overdue rescheduling; browser timers/calendar export | Test background delivery, permissions, exact-alarm settings, reboot and timezone changes on both platforms. |
-| Biometrics | Browser WebAuthn when available | Add a native biometric/secure-storage adapter; define what actually encrypts or protects records and credentials. |
+| Biometrics | Native builds unlock with @capgo/capacitor-native-biometric (Face ID, fingerprint, or the phone PIN/passcode); browsers use WebAuthn when available | Validate on devices; define what actually encrypts or protects records and credentials. |
 | Sharing | PWA Web Share Target and .txt import | Add Android share intents and an iOS share extension if receiving shares is required in the native app. |
 | Backups/calendar files | Browser file inputs and download links | Validate or replace with native filesystem/share/document-picker integrations. |
 | Data transfer | Export/import of text records | Native apps do not automatically inherit website storage; audio and keys are currently excluded from backups. |

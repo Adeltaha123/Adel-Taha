@@ -7,6 +7,7 @@ import { SocialSignIn } from './SocialSignIn';
 import { AssistantNameField } from './AssistantName';
 import { setAssistantName } from '../data/store';
 import { cleanAssistantName } from '../../../shared/assistant';
+import { changePin, lockNow, lockSupported, setPhoneUnlock, useLock } from '../platform/lock';
 export function Account() {
   const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[team,setTeam] = useState(''),[code,setCode] = useState(''),[invite,setInvite] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[assistant,setAssistant] = useState(s.assistantName);
   const busy = working || s.busy;
@@ -15,6 +16,7 @@ export function Account() {
   useEffect(() => setInvite(''),[s.scope]);
   useEffect(() => setAssistant(s.assistantName),[s.assistantName]); // The saved name can arrive after this screen opens.
   return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Label big>{t('Account & team','الحساب والفريق')}</Label>
+    {lockSupported && <Security/>}
     {!s.session ? <Card><Label>{t('Optional: sign in to sync across devices. Local features work without an account.','اختياري: سجّل الدخول للمزامنة. تعمل المهام المحلية بدون حساب.')}</Label>
       <SocialSignIn/>
       {register && <Field label={t('Name','الاسم')} value={name} onChangeText={setName} maxLength={80}/>}{register && <AssistantNameField value={assistant} onChange={setAssistant}/>}
@@ -38,4 +40,17 @@ export function Account() {
       <Button title={t('Sign out','خروج')} disabled={busy} secondary onPress={() => run(signOut)}/>
     </>}
   </ScrollView>;
+}
+
+function Security() {
+  const lock = useLock(), t = useText(), [failed,setFailed] = useState(false);
+  const toggle = async () => { setFailed(false); if (!await setPhoneUnlock(!lock.phoneUnlock,t('Turn on unlock like your phone','فعّل الفتح مثل هاتفك'),t('Cancel','إلغاء'))) setFailed(true); };
+  return <Card><Label big>{t('Security','الأمان')}</Label>
+    <Label>{t('Unlock like your phone: Face ID, fingerprint, or your phone PIN.','افتح مثل هاتفك: بالوجه أو البصمة أو رمز الهاتف.')}</Label>
+    {lock.phoneAvailable ? <Button title={lock.phoneUnlock ? t('Turn off phone unlock','إيقاف الفتح بالهاتف') : t('Turn on phone unlock','تفعيل الفتح بالهاتف')} icon="finger" secondary={lock.phoneUnlock} onPress={() => void toggle()}/>
+      : <Notice>{t('Set a screen lock on this phone first. Your PIN still protects the app.','فعّل قفل الشاشة على هاتفك أولاً. الرقم السري ما زال يحمي التطبيق.')}</Notice>}
+    {failed && <Notice tone="error">{t('Phone unlock was not confirmed.','لم يتم تأكيد الفتح بالهاتف.')}</Notice>}
+    <Button title={t('Lock now','اقفل الآن')} secondary onPress={lockNow}/>
+    <Button title={t('Change PIN','تغيير الرقم السري')} secondary onPress={changePin}/>
+    <Label small>{t('The PIN hides the app from others; it does not encrypt your data.','الرقم السري يخفي التطبيق عن الآخرين، ولا يشفّر بياناتك.')}</Label></Card>;
 }

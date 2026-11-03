@@ -2,6 +2,7 @@ import { closeSheet, openSheet, refreshSheet } from '../../shared/sheet.js';
 import { S, persist, put, remove, settings } from '../../data/store.js';
 import { TODAY, h, svg, toast } from '../../shared/helpers.js';
 import { LOCK, bioCreate, bioSupported, lockNow, showLock } from '../security/index.js';
+import { phoneUnlockOn } from '../../platform/biometric';
 import { lang, setLanguage, t } from '../../i18n/index.js';
 import { CFG, saveCfg } from '../../data/config.js';
 import { render } from '../../shared/events.js';
@@ -13,10 +14,12 @@ import { loadSample } from '../../data/sample.js';
 function openSettings(){
   openSheet(()=>{
     const st=settings();
-    const bioBtn=h("button",{type:"button",class:"btn",disabled:!!st.bioId||!bioSupported(),onclick:async()=>{
-      try{ const id=await bioCreate(); await put("settings",{...settings(),bioId:id}); toast(t("bioOn")); refreshSheet(); }
+    const bioOn=phoneUnlockOn(st);
+    const bioBtn=h("button",{type:"button",class:"btn","aria-pressed":String(bioOn),disabled:!bioOn&&!bioSupported(),onclick:async()=>{
+      if (bioOn){ const {bioId,phoneUnlock,...rest}=settings(); await put("settings",rest); refreshSheet(); return; }
+      try{ await put("settings",{...settings(),...await bioCreate()}); toast(t("bioOn")); refreshSheet(); }
       catch(e){ toast(t("bioNA")); }
-    }},svg("finger"),st.bioId?t("bioOn"):t("bioOff"));
+    }},svg("finger"),bioOn?t("bioDisable"):t("bioOff"));
     const ck=h("input",{class:"field",id:"cfgClaude",type:"password",autocomplete:"off",placeholder:"sk-ant-…",value:CFG.claudeKey||""});
     const ok=h("input",{class:"field",id:"cfgOpenai",type:"password",autocomplete:"off",placeholder:"sk-…",value:CFG.openaiKey||""});
     const pv=h("select",{class:"field",id:"cfgProvider"},[["claude","Claude (Anthropic)"],["openai","ChatGPT (OpenAI)"]].map(([v,l])=>h("option",{value:v,selected:CFG.provider===v},l)));

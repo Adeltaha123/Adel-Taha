@@ -1,4 +1,5 @@
-import { $, b64, h, sha, svg, toast, unb64 } from '../../shared/helpers.js';
+import { $, h, sha, svg, toast } from '../../shared/helpers.js';
+import { enablePhoneUnlock, phoneUnlockAvailable, phoneUnlockOn, verifyPhoneUnlock } from '../../platform/biometric';
 import { S, put, settings } from '../../data/store.js';
 import { lang, t } from '../../i18n/index.js';
 import { go, render } from '../../shared/events.js';
@@ -11,19 +12,9 @@ import { closeSheet } from '../../shared/sheet.js';
 const LOCK = { unlocked:false, hiddenAt:0 };
 let BIO_OK=false;
 function bioSupported(){ return BIO_OK; }
-try{ if (window.PublicKeyCredential && window.isSecureContext && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(v=>{ BIO_OK=!!v; if(BIO_OK && !$("#lock").hidden && settings().bioId && !LOCK.unlocked && !$(".bio-btn")) showLock("unlock"); }).catch(()=>{}); }catch(e){}
-async function bioCreate(){
-  const cred = await navigator.credentials.create({publicKey:{
-    challenge: crypto.getRandomValues(new Uint8Array(32)),
-    rp:{name:"My PA"}, user:{id:new TextEncoder().encode(S.uid.slice(0,60)), name:"owner", displayName:"My PA owner"},
-    pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-    authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"}, timeout:60000 }});
-  return b64(cred.rawId);
-}
-async function bioVerify(id){
-  const a = await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:unb64(id)}],userVerification:"required",timeout:60000}});
-  return !!a;
-}
+phoneUnlockAvailable().then(v=>{ BIO_OK=v; if(BIO_OK && !$("#lock").hidden && phoneUnlockOn(settings()) && !LOCK.unlocked && !$(".bio-btn")) showLock("unlock"); });
+const bioCreate = () => enablePhoneUnlock(S.uid, t("unlockBio"));
+const bioVerify = st => verifyPhoneUnlock(st, t("unlockBio"));
 function showLock(mode){
   const L = $("#lock"); L.hidden = false; L.replaceChildren();
   let entered = "", first = null;
@@ -40,7 +31,7 @@ function showLock(mode){
       if (first == null){ first = entered; entered=""; paint(); title.textContent = t("confirmPin"); err.textContent=""; return; }
       if (first !== entered){ first=null; title.textContent=t("setupT"); return fail(t("pinMismatch")); }
       await put("settings",{...settings(),kind:"settings",pinHash:await sha(S.uid+":"+entered),lang});
-      if (bioSupported() && !settings().bioId){ try{ const id=await bioCreate(); await put("settings",{...settings(),bioId:id}); toast(t("bioOn")); }catch(e){} }
+      if (bioSupported() && !phoneUnlockOn(settings())){ try{ await put("settings",{...settings(),...await bioCreate()}); toast(t("bioOn")); }catch(e){} }
       unlock(); return;
     }
     if (await sha(S.uid+":"+entered) === st.pinHash) unlock(); else fail(t("wrongPin"));
@@ -52,10 +43,10 @@ function showLock(mode){
     h("button",{type:"button",onclick:()=>press("0")},"0"),
     h("button",{type:"button","aria-label":"Delete",onclick:()=>{entered=entered.slice(0,-1);paint();}},svg("back")));
   L.append(brand,title,sub,dots,err,pad);
-  if (mode!=="setup" && st.bioId && bioSupported()){
-    const b = h("button",{type:"button",class:"bio-btn",onclick:async()=>{ try{ if(await bioVerify(st.bioId)) unlock(); }catch(e){ err.textContent=t("bioNA"); } }},svg("finger"),t("unlockBio"));
+  if (mode!=="setup" && phoneUnlockOn(st) && bioSupported()){
+    const b = h("button",{type:"button",class:"bio-btn",onclick:async()=>{ try{ if(await bioVerify(st)) unlock(); }catch(e){ err.textContent=t("bioNA"); } }},svg("finger"),t("unlockBio"));
     L.append(b);
-    setTimeout(async()=>{ try{ if(!LOCK.unlocked && await bioVerify(st.bioId)) unlock(); }catch(e){} },350);
+    setTimeout(async()=>{ try{ if(!LOCK.unlocked && await bioVerify(st)) unlock(); }catch(e){} },350);
   }
   L.onkeydown = e => { if (/^\d$/.test(e.key)) press(e.key); if (e.key==="Backspace"){entered=entered.slice(0,-1);paint();} };
   L.tabIndex = -1; L.focus();
