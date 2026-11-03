@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useSyncExternalStore } from 'react';
 import type { Member, User, Workspace, SyncResult } from '../../../shared/api';
+import type { PlanInfo, Role } from '../../../shared/plans';
 import { mergeRecords, mutationsFor, type Records, type Baseline } from '../../../shared/sync';
 import { cleanAssistantName } from '../../../shared/assistant';
 import { deleteSecret, getSecret, setSecret } from '../platform/secure';
@@ -15,7 +16,7 @@ type Saved = { scopes:Record<string,Scope>; language:'en'|'ar'; focusEnd:number|
 const empty = (): Scope => ({ records:{}, baseline:{}, conflicts:[] });
 let saved: Saved = { scopes:{ guest:empty() }, language:'ar', focusEnd:null };
 let state = { ready:false, scope:'guest', records:{} as Records, conflicts:[] as string[], session:null as Session|null,
-  workspaces:[] as Workspace[], members:[] as Member[], busy:false, status:'', error:'', language:'ar' as 'en'|'ar', focusEnd:null as number|null, undo:false, theme:'system' as Theme, assistantName:'', askName:false };
+  workspaces:[] as Workspace[], members:[] as Member[], plan:null as PlanInfo|null, busy:false, status:'', error:'', language:'ar' as 'en'|'ar', focusEnd:null as number|null, undo:false, theme:'system' as Theme, assistantName:'', askName:false };
 const listeners = new Set<() => void>();
 function patch(value: Partial<typeof state>) { if(Object.entries(value).every(([key,v])=>Object.is(state[key as keyof typeof state],v)))return; state = { ...state, ...value }; listeners.forEach(fn => fn()); }
 export const useStore = () => useSyncExternalStore(fn => { listeners.add(fn); return () => { listeners.delete(fn); }; }, () => state);
@@ -121,7 +122,7 @@ export async function api<T>(path:string, body?:unknown, timeout=15000,signal?:A
     }
     const result = await response.json().catch(() => ({ error:'API returned an invalid response.' }));
     if (response.status === 401 && state.session && path !== '/auth/logout') await forgetSession();
-    if (!response.ok) throw new Error(result.error ?? `Request failed (${response.status})`);
+    if (!response.ok) throw new Error(planMessage(result.code) ?? result.error ?? `Request failed (${response.status})`);
     return result;
   } finally { clearTimeout(timer);signal?.removeEventListener('abort',abort); }
 }
@@ -152,7 +153,29 @@ export async function socialSignIn(provider:SocialProvider, link=false):Promise<
   return outcome;
 }
 export const providers = () => api<Record<SocialProvider,{ enabled:boolean }>>('/auth/providers');
-export async function refresh() { const workspaces = await api<Workspace[]>('/workspaces'); patch({ workspaces }); }
+export async function refresh() { const workspaces = await api<Workspace[]>('/workspaces'); patch({ workspaces }); void loadPlan(); }
+/** The account's plan and this month's AI use; refreshed after sign-in, on the Account screen, and after AI requests. */
+export async function loadPlan() { if (state.session) patch({ plan:await api<PlanInfo>('/plan').catch(() => state.plan) }); }
+function planMessage(code:unknown) {
+  const ar = state.language === 'ar';
+  if (code === 'ai_limit') { void loadPlan(); return ar ? 'استخدمت كل طلبات الذكاء الاصطناعي والصوت المجانية لهذا الشهر. اشترك في الباقة الشخصية لاستخدام غير محدود.' : "You have used this month's free AI and voice requests. Subscribe to Personal for unlimited use."; }
+  if (code === 'team_plan') return ar ? 'الفرق تحتاج باقة الفريق لصاحب الفريق.' : 'Teams need the Team plan for the team owner.';
+  if (code === 'team_full') return ar ? 'الفريق وصل للحد الأقصى (١٠ أعضاء).' : 'This team has reached the 10-member limit.';
+  return null;
+}
+/** This user's role in the current workspace; the personal workspace is always the owner's. */
+export function myRole():Role { return state.members.find(m => m.id === state.session?.user.id)?.role ?? 'owner'; }
+const currentWorkspace = () => state.scope.split(':')[1]!;
+export async function invite(role:Exclude<Role,'owner'>) { return (await api<{ code:string }>(`/workspaces/${currentWorkspace()}/invitations`,{ role })).code; }
+async function reloadMembers() { patch({ members:await api<Member[]>(`/workspaces/${currentWorkspace()}/members`) }); }
+export async function setMemberRole(userId:string, role:Exclude<Role,'owner'>) { await api(`/workspaces/${currentWorkspace()}/members/${userId}/role`,{ role }); await reloadMembers(); }
+export async function removeMember(userId:string) { await api(`/workspaces/${currentWorkspace()}/members/${userId}/remove`,{}); await reloadMembers(); }
+/** Leaves the current team and returns to the personal workspace; the team keeps its tasks. */
+export async function leaveTeam() {
+  await api(`/workspaces/${currentWorkspace()}/members/${state.session!.user.id}/remove`,{});
+  delete saved.scopes[state.scope]; persist(); await refresh();
+  const personal = state.workspaces.find(w => w.personal); if (personal) await selectWorkspace(personal.id);
+}
 export async function authenticate(mode:'login'|'register', email:string, password:string, name:string, assistantName='') {
   if (state.busy) return;
   patch({ busy:true });
@@ -196,16 +219,20 @@ export async function sync() {
     const members = await api<Member[]>(`/workspaces/${workspace}/members`);
     patch({ members });
     const mutations = mutationsFor(before, data.baseline, data.conflicts);
-    const conflicts = new Set(data.conflicts);
+    const conflicts = new Set(data.conflicts), rejected = new Set<string>();
     let result:SyncResult = { records:[], conflicts:[] };
     for (let i = 0; i < Math.max(1,mutations.length); i += 100) {
       result = await api<SyncResult>(`/workspaces/${workspace}/sync`, { mutations:mutations.slice(i,i+100) });
       result.conflicts.forEach(id => conflicts.add(id));
+      result.rejected?.forEach(id => rejected.add(id));
     }
     if(!mutations.length && !result.conflicts.length && result.records.every(r=>data.baseline[r.id]?.version===r.version)) {
       patch({status:data.conflicts.length?(state.language==='ar'?'راجع التعارضات في الحساب':'Review conflicts in Account'):(state.language==='ar'?'محفوظ في قاعدة البيانات':'Synced')});return;
     }
     const records = mergeRecords(before,state.records,result.records,[...conflicts]);
+    // The team role did not allow these edits: put back what the team has, so they are not resent on every sync.
+    for (const id of rejected) { const kept = result.records.find(r => r.id === id && !r.deleted)?.data; if (kept) records[id] = kept; else delete records[id]; }
+    if (rejected.size) patch({ error:state.language === 'ar' ? 'دورك في الفريق لا يسمح ببعض التعديلات، فرجعت كما كانت.' : 'Your team role does not allow some of those changes, so they were undone.' });
     result.records.forEach(r => { data.baseline[r.id] = r; });
     data.conflicts = [...conflicts]; setRecords(records);
     patch({ conflicts:data.conflicts, status:conflicts.size ? (state.language === 'ar' ? 'راجع التعارضات في الحساب' : 'Review conflicts in Account') : (state.language === 'ar' ? 'محفوظ في قاعدة البيانات' : 'Synced') });
@@ -238,3 +265,5 @@ export async function loadVoiceDraft():Promise<VoiceDraft|null> {
 export function saveVoiceDraft(value:VoiceDraft|null) {
   void (value && (value.text.trim() || value.drafts.length) ? AsyncStorage.setItem(VOICE_DRAFT,JSON.stringify(value)) : AsyncStorage.removeItem(VOICE_DRAFT)).catch(() => {});
 }
+/** How many records from offline use on this device are not yet in the current workspace. */
+export const pendingGuestRecords = () => state.scope === 'guest' ? 0 : Object.keys(saved.scopes.guest?.records ?? {}).filter(id => !state.records[id]).length;

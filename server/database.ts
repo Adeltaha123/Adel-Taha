@@ -14,6 +14,15 @@ export function openDatabase(path: string) {
     CREATE TABLE IF NOT EXISTS records (workspace_id TEXT NOT NULL REFERENCES workspaces(id), id TEXT NOT NULL, version INTEGER NOT NULL, deleted INTEGER NOT NULL, data TEXT, PRIMARY KEY(workspace_id,id));
     CREATE TABLE IF NOT EXISTS preferences (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, data TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS session_expiry ON sessions(expires);
+    CREATE TABLE IF NOT EXISTS ai_usage (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, month TEXT NOT NULL, count INTEGER NOT NULL, PRIMARY KEY(user_id,month));
   `);
+  // Columns added after the first release; existing databases gain them in place.
+  const addColumn = (table: string, column: string, definition: string) => {
+    if (!(db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some(c => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  };
+  addColumn('users', 'plan', "TEXT NOT NULL DEFAULT 'free'");
+  addColumn('users', 'plan_until', 'INTEGER');
+  addColumn('records', 'created_by', 'TEXT'); // NULL for records from before team roles; any member may change those.
+  addColumn('invitations', 'role', "TEXT NOT NULL DEFAULT 'member'");
   return db;
 }

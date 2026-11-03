@@ -10,6 +10,8 @@ import { registerAssistant, type AssistantOptions } from './assistant.js';
 import { PublicError } from './public-error.js';
 import { registerOAuth,type OAuthOptions } from './oauth.js';
 import { ASSISTANT_NAME } from '../shared/assistant.js';
+import { TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, canWrite, type Role } from '../shared/plans.js';
+import { planInfo, requireTeamPlan, useAi } from './plans.js';
 import type { CloudRecord, User, Workspace } from '../shared/api.js';
 
 const scrypt = promisify(scryptCallback);
@@ -23,6 +25,10 @@ const syncSchema = z.object({ mutations: z.array(z.object({
 })).max(100) });
 class HttpError extends Error { constructor(public statusCode: number, message: string) { super(message); } }
 
+/** The database behind an API instance, for tests and maintenance scripts that run in the same process. */
+const databases = new WeakMap<object, ReturnType<typeof openDatabase>>();
+export const apiDatabase = (app: object) => databases.get(app)!;
+
 export async function createApi(options: { databasePath?: string; origins?: string[]; rateLimit?: boolean; assistant?:AssistantOptions;oauth?:OAuthOptions } = {}) {
   const db = openDatabase(options.databasePath ?? 'data/my-pa.sqlite');
   const app = Fastify({ bodyLimit: 2 * 1024 * 1024, logger: false });
@@ -34,7 +40,7 @@ export async function createApi(options: { databasePath?: string; origins?: stri
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid request', details: error.issues.map(i => i.message) });
     const status = (error as HttpError).statusCode ?? 500;
-    reply.code(status).send({ error: status >= 500 && !(error instanceof PublicError) ? 'The server could not complete this request.' : (error as Error).message });
+    reply.code(status).send({ error: status >= 500 && !(error instanceof PublicError) ? 'The server could not complete this request.' : (error as Error).message, ...(error instanceof PublicError && error.code ? { code: error.code } : {}) });
   });
 
   const DAY_MS = 24 * 3600_000, SESSION_MS = 30 * DAY_MS;
@@ -49,12 +55,13 @@ export async function createApi(options: { databasePath?: string; origins?: stri
     const { expires: _, ...user } = row;
     return user;
   }
-  function workspaceFor(request: FastifyRequest): { user: User; workspace: Workspace } {
+  function workspaceFor(request: FastifyRequest): { user: User; workspace: Workspace; role: Role } {
     const user = userFor(request);
     const { id } = z.object({ id: idSchema }).parse(request.params);
-    const row = db.prepare('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE w.id=? AND m.user_id=?').get(id, user.id) as unknown as Workspace | undefined;
+    const row = db.prepare('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal,m.role FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE w.id=? AND m.user_id=?').get(id, user.id) as unknown as (Workspace & { role: Role }) | undefined;
     if (!row) throw new HttpError(404, 'Workspace not found.');
-    return { user, workspace: { ...row, personal: Boolean(row.personal) } };
+    const { role, ...workspace } = row;
+    return { user, workspace: { ...workspace, personal: Boolean(row.personal) }, role };
   }
   function createWorkspace(userId: string, name: string, personal: boolean) {
     const id = randomUUID();
@@ -68,10 +75,11 @@ export async function createApi(options: { databasePath?: string; origins?: stri
     db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(hash(token), user.id, Date.now() + SESSION_MS);
     return { token, user };
   }
-  registerAssistant(app,userFor,options.assistant);
+  registerAssistant(app,userFor,options.assistant,user => useAi(db,user.id));
   registerOAuth(app,db,{session,createWorkspace,userFor},options.oauth);
   const authConfig = { rateLimit: { max: 10, timeWindow: '1 minute' } };
   app.get('/api/health', async () => ({ ok: true }));
+  app.get('/api/plan', async request => planInfo(db, userFor(request).id));
   // Per-user settings (not per workspace), so they follow the person to every device and are never shared with a team.
   const preferences = z.object({ language: z.enum(['en', 'ar']).optional(), theme: z.enum(['system', 'light', 'dark']).optional(), assistantName: z.string().trim().regex(ASSISTANT_NAME).optional() }).strict();
   app.get('/api/preferences', async request => {
@@ -95,7 +103,7 @@ export async function createApi(options: { databasePath?: string; origins?: stri
     const user = { id: randomUUID(), name: body.name, email: body.email };
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.prepare('INSERT INTO users VALUES (?,?,?,?)').run(user.id, user.email, user.name, `${salt}:${digest}`);
+      db.prepare('INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)').run(user.id, user.email, user.name, `${salt}:${digest}`);
       createWorkspace(user.id, 'Personal', true);
       db.exec('COMMIT');
     } catch (error) { db.exec('ROLLBACK'); throw error; }
@@ -122,35 +130,67 @@ export async function createApi(options: { databasePath?: string; origins?: stri
   app.post('/api/workspaces', async (request, reply) => {
     const user = userFor(request);
     const { name } = z.object({ name: z.string().trim().min(1).max(80) }).parse(request.body);
+    requireTeamPlan(db, user.id);
     return reply.code(201).send(createWorkspace(user.id, name, false));
   });
   app.get('/api/workspaces/:id/members', async request => {
     const { workspace } = workspaceFor(request);
-    return db.prepare('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY m.role DESC,u.name').all(workspace.id);
+    return db.prepare("SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'member' THEN 2 ELSE 3 END,u.name").all(workspace.id);
   });
+  const memberCount = (workspaceId: string) => (db.prepare('SELECT COUNT(*) AS n FROM members WHERE workspace_id=?').get(workspaceId) as { n: number }).n;
+  const roleSchema = z.enum(['admin', 'member', 'viewer']);
   app.post('/api/workspaces/:id/invitations', async request => {
-    const { workspace, user } = workspaceFor(request);
-    if (workspace.personal || workspace.ownerId !== user.id) throw new HttpError(403, 'Only a team owner can create invitations.');
+    const { workspace, role } = workspaceFor(request);
+    const { role: invited } = z.object({ role: roleSchema.default('member') }).parse(request.body ?? {});
+    if (workspace.personal || !canManageTeam(role)) throw new HttpError(403, 'Only the team owner or an admin can invite people.');
+    if (!assignableRoles(role).includes(invited)) throw new HttpError(403, 'Only the team owner can invite admins.');
+    requireTeamPlan(db, workspace.ownerId);
+    if (memberCount(workspace.id) >= TEAM_MAX_MEMBERS) throw new PublicError(403, `This team already has ${TEAM_MAX_MEMBERS} members, the Team plan limit.`, 'team_full');
     const code = randomBytes(24).toString('base64url');
     db.prepare('DELETE FROM invitations WHERE expires<=?').run(Date.now());
-    db.prepare('INSERT INTO invitations VALUES (?,?,?)').run(hash(code), workspace.id, Date.now() + 7 * 86400_000);
-    return { code, expiresInDays: 7 };
+    db.prepare('INSERT INTO invitations (hash,workspace_id,expires,role) VALUES (?,?,?,?)').run(hash(code), workspace.id, Date.now() + 7 * 86400_000, invited);
+    return { code, expiresInDays: 7, role: invited };
+  });
+  const memberParams = z.object({ id: idSchema, userId: idSchema });
+  /** Checks that the actor may change this member and returns the member's current role. */
+  function manageable(request: FastifyRequest) {
+    const { workspace, role, user } = workspaceFor(request);
+    const { userId } = memberParams.parse(request.params);
+    const target = db.prepare('SELECT role FROM members WHERE workspace_id=? AND user_id=?').get(workspace.id, userId) as { role: Role } | undefined;
+    if (!target) throw new HttpError(404, 'Member not found.');
+    return { workspace, role, user, userId, target: target.role };
+  }
+  app.post('/api/workspaces/:id/members/:userId/role', async request => {
+    const { workspace, role, userId, target } = manageable(request);
+    const { role: next } = z.object({ role: roleSchema }).parse(request.body);
+    if (workspace.personal || !canChangeMember(role, target) || !assignableRoles(role).includes(next)) throw new HttpError(403, 'You cannot give this member that role.');
+    db.prepare('UPDATE members SET role=? WHERE workspace_id=? AND user_id=?').run(next, workspace.id, userId);
+    return { ok: true };
+  });
+  // Removes a member, or lets members other than the owner leave. Their tasks stay with the team.
+  app.post('/api/workspaces/:id/members/:userId/remove', async request => {
+    const { workspace, role, user, userId, target } = manageable(request);
+    const leaving = userId === user.id && target !== 'owner';
+    if (workspace.personal || (!leaving && !canChangeMember(role, target))) throw new HttpError(403, 'You cannot remove this member.');
+    db.prepare('DELETE FROM members WHERE workspace_id=? AND user_id=?').run(workspace.id, userId);
+    return { ok: true };
   });
   app.post('/api/invitations/join', async request => {
     const user = userFor(request);
     const { code } = z.object({ code: z.string().min(20).max(100) }).parse(request.body);
-    const invite = db.prepare('SELECT workspace_id FROM invitations WHERE hash=? AND expires>?').get(hash(code), Date.now()) as { workspace_id: string } | undefined;
+    const invite = db.prepare('SELECT workspace_id,role FROM invitations WHERE hash=? AND expires>?').get(hash(code), Date.now()) as { workspace_id: string; role: Role } | undefined;
     if (!invite) throw new HttpError(404, 'Invitation is invalid, expired, or already used.');
+    if (memberCount(invite.workspace_id) >= TEAM_MAX_MEMBERS) throw new PublicError(403, `This team already has ${TEAM_MAX_MEMBERS} members, the Team plan limit.`, 'team_full');
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.prepare('INSERT OR IGNORE INTO members VALUES (?,?,?)').run(invite.workspace_id, user.id, 'member');
+      db.prepare('INSERT OR IGNORE INTO members VALUES (?,?,?)').run(invite.workspace_id, user.id, invite.role);
       db.prepare('DELETE FROM invitations WHERE hash=?').run(hash(code));
       db.exec('COMMIT');
     } catch (error) { db.exec('ROLLBACK'); throw error; }
     return { workspaceId: invite.workspace_id };
   });
   app.post('/api/workspaces/:id/sync', async request => {
-    const { workspace } = workspaceFor(request);
+    const { workspace, role, user } = workspaceFor(request);
     const { mutations } = syncSchema.parse(request.body);
     if (new Set(mutations.map(m => m.id)).size !== mutations.length) throw new HttpError(400, 'Duplicate record IDs.');
     for (const mutation of mutations) {
@@ -163,21 +203,24 @@ export async function createApi(options: { databasePath?: string; origins?: stri
       if (JSON.stringify(data).length > 100_000) throw new HttpError(400, 'Record is too large.');
       if (data.assigneeId && !db.prepare('SELECT user_id FROM members WHERE workspace_id=? AND user_id=?').get(workspace.id, String(data.assigneeId))) throw new HttpError(400, 'Assignee must be a workspace member.');
     }
-    const conflicts: string[] = [];
+    // Changes the member's role does not allow are rejected; the app restores the stored version.
+    const conflicts: string[] = [], rejected: string[] = [];
     db.exec('BEGIN IMMEDIATE');
     try {
       for (const mutation of mutations) {
-        const existing = db.prepare('SELECT version,data,deleted FROM records WHERE workspace_id=? AND id=?').get(workspace.id, mutation.id) as { version: number; data: string | null; deleted: number } | undefined;
+        const existing = db.prepare('SELECT version,data,deleted,created_by FROM records WHERE workspace_id=? AND id=?').get(workspace.id, mutation.id) as { version: number; data: string | null; deleted: number; created_by: string | null } | undefined;
         const serialized = mutation.data ? JSON.stringify(mutation.data) : null;
         // An identical retry is already applied, including when the previous response was lost.
         if (existing && existing.data === serialized && Boolean(existing.deleted) === (mutation.data === null)) continue;
+        if (!workspace.personal && !canWrite(role, user.id, existing ? { createdBy: existing.created_by, data: existing.data ? JSON.parse(existing.data) : null } : null, mutation.data)) { rejected.push(mutation.id); continue; }
         if ((existing?.version ?? 0) !== mutation.expectedVersion) { conflicts.push(mutation.id); continue; }
-        db.prepare('INSERT INTO records VALUES (?,?,?,?,?) ON CONFLICT(workspace_id,id) DO UPDATE SET version=excluded.version,deleted=excluded.deleted,data=excluded.data').run(workspace.id, mutation.id, (existing?.version ?? 0) + 1, Number(mutation.data === null), serialized);
+        db.prepare('INSERT INTO records (workspace_id,id,version,deleted,data,created_by) VALUES (?,?,?,?,?,?) ON CONFLICT(workspace_id,id) DO UPDATE SET version=excluded.version,deleted=excluded.deleted,data=excluded.data').run(workspace.id, mutation.id, (existing?.version ?? 0) + 1, Number(mutation.data === null), serialized, existing ? existing.created_by : user.id);
       }
       db.exec('COMMIT');
     } catch (error) { db.exec('ROLLBACK'); throw error; }
     const records: CloudRecord[] = db.prepare('SELECT id,version,deleted,data FROM records WHERE workspace_id=?').all(workspace.id).map(row => ({ id: String(row.id), version: Number(row.version), deleted: Boolean(row.deleted), data: row.data ? JSON.parse(String(row.data)) : null }));
-    return { records, conflicts };
+    return { records, conflicts, rejected };
   });
+  databases.set(app, db);
   return app;
 }

@@ -117,7 +117,7 @@ export function registerOAuth(app:FastifyInstance,db:DatabaseSync,hooks:{session
           if(flow.link_user)userId=flow.link_user;
           else {
             if(db.prepare('SELECT id FROM users WHERE email=?').get(identity.email))throw new Error('Sign in with email and link this provider from Account');
-            userId=randomUUID();db.prepare('INSERT INTO users VALUES (?,?,?,?)').run(userId,identity.email,identity.name,`${randomBytes(16).toString('hex')}:${randomBytes(64).toString('hex')}`);hooks.createWorkspace(userId,'Personal',true);
+            userId=randomUUID();db.prepare('INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)').run(userId,identity.email,identity.name,`${randomBytes(16).toString('hex')}:${randomBytes(64).toString('hex')}`);hooks.createWorkspace(userId,'Personal',true);
           }
           db.prepare('INSERT INTO oauth_identities VALUES (?,?,?)').run(p,identity.sub,userId);
         }

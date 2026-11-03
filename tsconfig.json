@@ -10,5 +10,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["shared", "tests", "playwright.expo.config.ts"]
+  "include": ["shared", "tests", "scripts/*.ts", "playwright.expo.config.ts"]
 }

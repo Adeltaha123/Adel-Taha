@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { clearError, initialize, setLanguage, setTheme, sync, undoChange, useStore } from '../data/store';
+import { clearError, initialize, myRole, setLanguage, setTheme, sync, undoChange, useStore } from '../data/store';
 import { Brand } from './Brand';
 import { Button, Chip, Icon, IconButton, Label, Notice, Page, styles, useText, useTheme, type icons } from './ui';
 import { Tasks } from '../features/tasks/Tasks';
@@ -39,6 +39,7 @@ function Shell() {
           <IconButton icon={c.dark ? 'sun' : 'moon'} size={40} label={c.dark ? t('Light mode','الوضع الفاتح') : t('Dark mode','الوضع الداكن')} onPress={() => setTheme(c.dark ? 'light' : 'dark')}/>
           <Chip title={s.language === 'en' ? 'العربية' : 'English'} active={false} onPress={() => setLanguage(s.language === 'en' ? 'ar' : 'en')}/></View></View>
       {inside && <View style={[styles.row,{ justifyContent:'space-between' }]}><View style={{ alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:6,backgroundColor:c.surface,borderWidth:1,borderColor:c.line,borderRadius:999,paddingHorizontal:10,paddingVertical:4 }}><View style={{ width:7,height:7,borderRadius:4,backgroundColor:s.session ? c.accent : c.gold }}/><Text style={{ fontSize:12,color:c.muted }}>{s.status || t('Saved on this device','محفوظ على الجهاز')}</Text></View>{s.undo && <Chip title={t('Undo last change','تراجع عن آخر تغيير')} active={false} onPress={undoChange}/>}</View>}
+      {inside && s.session && myRole() === 'viewer' && <Notice>{t('You are a viewer in this team: you can see its tasks, but changes are not saved.','أنت مشاهد في هذا الفريق: ترى المهام لكن تعديلاتك لا تُحفظ.')}</Notice>}
       {!!s.error && <View style={{ gap:8 }}><Notice tone="error">{s.error}</Notice><Button title={t('Dismiss','إغلاق')} secondary onPress={clearError}/></View>}</View>
     {inside && tab === 'library' && <View style={[styles.row,{ paddingHorizontal:20,paddingTop:4 }]}>{[['notes','Notes','ملاحظات'],['habits','Habits','عادات'],['commands','Commands','أوامر']].map(([id,en,ar]) => <Chip key={id} title={t(en!,ar!)} active={library === id} onPress={() => setLibrary(id!)}/>)}</View>}
     {inside && <CheckIns/>}

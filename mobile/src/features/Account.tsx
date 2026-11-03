@@ -1,45 +1,106 @@
 import { useEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import type { Workspace } from '../../../shared/api';
-import { api, authenticate, conflictVersions, importGuest, refresh, reportError, resolve, selectWorkspace, signOut, sync, useStore } from '../data/store';
-import { Button, Card, Field, Label, Notice, styles, useText } from '../app/ui';
+import { PLANS, TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, type Role } from '../../../shared/plans';
+import { api, authenticate, conflictVersions, importGuest, invite, leaveTeam, myRole, pendingGuestRecords, refresh, removeMember, reportError, resolve, selectWorkspace, setMemberRole, signOut, useStore } from '../data/store';
+import { Button, Card, Chip, Eyebrow, Field, Label, Notice, styles, useText, useTheme } from '../app/ui';
 import { SocialSignIn } from './SocialSignIn';
 import { AssistantNameField } from './AssistantName';
 import { setAssistantName } from '../data/store';
 import { cleanAssistantName } from '../../../shared/assistant';
 import { changePin, lockNow, setPhoneUnlock, useLock } from '../platform/lock';
+type Run = (fn:()=>Promise<unknown>) => void;
+type T = ReturnType<typeof useText>;
+const roleName = (role:Role, t:T) => role === 'owner' ? t('Owner','المالك') : role === 'admin' ? t('Admin','مشرف') : role === 'member' ? t('Member','عضو') : t('Viewer','مشاهد');
+const roleHelp = (role:Role, t:T) => role === 'owner' ? t('Manages the plan, members and all tasks.','يدير الباقة والأعضاء وكل المهام.')
+  : role === 'admin' ? t('Invites and removes members, changes roles, and assigns tasks to anyone.','يدعو الأعضاء ويحذفهم ويغيّر أدوارهم ويسند المهام لأي شخص.')
+  : role === 'member' ? t('Adds tasks and edits their own and the ones assigned to them.','يضيف مهام ويعدّل مهامه والمهام المسندة إليه.')
+  : t('Sees the team’s tasks but cannot change them.','يرى مهام الفريق ولا يستطيع تعديلها.');
 export function Account() {
-  const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[team,setTeam] = useState(''),[code,setCode] = useState(''),[invite,setInvite] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[assistant,setAssistant] = useState(s.assistantName);
+  const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[assistant,setAssistant] = useState(s.assistantName);
   const busy = working || s.busy;
-  const run = (fn:()=>Promise<unknown>) => { if (busy) return; setWorking(true); void fn().catch(reportError).finally(() => setWorking(false)); };
+  const run:Run = fn => { if (busy) return; setWorking(true); void fn().catch(reportError).finally(() => setWorking(false)); };
   const active = s.workspaces.find(w => s.scope.endsWith(`:${w.id}`));
-  useEffect(() => setInvite(''),[s.scope]);
+  useEffect(() => { if (s.session) void refresh().catch(() => {}); },[!!s.session]); // New teams and plan changes appear when Account opens.
   useEffect(() => setAssistant(s.assistantName),[s.assistantName]); // The saved name can arrive after this screen opens.
-  return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Label big>{t('Account & team','الحساب والفريق')}</Label>
-    <Security/>
-    {!s.session ? <Card><Label>{t('Optional: sign in to sync across devices. Local features work without an account.','اختياري: سجّل الدخول للمزامنة. تعمل المهام المحلية بدون حساب.')}</Label>
+  if (!s.session) return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Label big>{t('Account','الحساب')}</Label>
+    <Card><Label>{t('Optional: sign in to sync across devices. Local features work without an account.','اختياري: سجّل الدخول للمزامنة. تعمل المهام المحلية بدون حساب.')}</Label>
       <SocialSignIn/>
       {register && <Field label={t('Name','الاسم')} value={name} onChangeText={setName} maxLength={80}/>}{register && <AssistantNameField value={assistant} onChange={setAssistant}/>}
       <Field label={t('Email','البريد الإلكتروني')} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address"/>
       <Field label={t('Password (10+ characters)','كلمة المرور (١٠ أحرف على الأقل)')} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none"/>
       <Button title={register ? t('Create account','إنشاء حساب') : t('Sign in','دخول')} disabled={busy || !email || password.length < 10 || (register && !name.trim())} onPress={() => run(async () => { await authenticate(register ? 'register' : 'login',email.trim(),password,name.trim(),register ? assistant : ''); setPassword(''); })}/>
-      <Button title={register ? t('Use existing account','لدي حساب') : t('Register instead','إنشاء حساب جديد')} secondary onPress={() => setRegister(!register)}/></Card> : <>
-      <Label>{s.session.user.name} · {s.session.user.email}</Label>
-      <Card><Label big>{t('Your assistant','مساعدك')}</Label><AssistantNameField value={assistant} onChange={setAssistant}/><Button title={t('Save name','حفظ الاسم')} disabled={!cleanAssistantName(assistant) || cleanAssistantName(assistant) === s.assistantName} onPress={() => setAssistantName(assistant)}/></Card>
-      <Card><Label big>{t('Sign-in methods','طرق تسجيل الدخول')}</Label><Label>{t('Link Google, Apple or Meta to sign in to this account with one tap.','اربط Google أو Apple أو Meta لتدخل إلى هذا الحساب بلمسة واحدة.')}</Label><SocialSignIn link onLinked={p => setLinked(p)}/>{!!linked && <Notice>{t('Linked. You can now sign in with it.','تم الربط. يمكنك الدخول به الآن.')}</Notice>}</Card><Label>{t('Choose a workspace to sync. Device records stay separate.','اختر مساحة للمزامنة. تبقى سجلات الجهاز منفصلة.')}</Label>
-      <Button title={t('Refresh workspaces','تحديث المساحات')} disabled={busy} secondary onPress={() => run(refresh)}/>
-      {s.workspaces.map(w => <Button key={w.id} title={`${active?.id === w.id ? '✓ ' : ''}${w.name}`} disabled={busy} secondary onPress={() => run(() => selectWorkspace(w.id))}/>)}
-      {active && <Card><Label big>{active.name}</Label><Label>{s.status}</Label><Button title={t('Sync now','مزامنة الآن')} disabled={busy} onPress={() => run(sync)}/><Button title={t('Copy device records here','نسخ سجلات الجهاز هنا')} disabled={busy} secondary onPress={importGuest}/>
-        {s.members.map(m => <Label key={m.id}>{m.name} · {m.role}</Label>)}
-        {!active.personal && active.ownerId === s.session.user.id && <Button title={t('Create invitation','إنشاء دعوة')} disabled={busy} secondary onPress={() => run(async () => { const result = await api<{code:string}>(`/workspaces/${active.id}/invitations`,{}); setInvite(result.code); })}/>}
-        {!!invite && <Field label={t('Invitation code (single use, 7 days)','رمز الدعوة (مرة واحدة، ٧ أيام)')} value={invite} editable={false} selectTextOnFocus/>}
-      </Card>}
-      {s.conflicts.map(id => { const versions = conflictVersions(id); return <Card key={id}><Label big>{t('Resolve conflicting changes','حل تعارض التغييرات')}</Label><Label>{t('Device','الجهاز')}: {JSON.stringify(versions.local ?? 'Deleted')}</Label><Label>{t('Server','الخادم')}: {JSON.stringify(versions.remote ?? 'Deleted')}</Label><Button title={t('Keep device version','احتفظ بنسخة الجهاز')} disabled={busy} onPress={() => resolve(id,'local')}/><Button title={t('Use server version','استخدم نسخة الخادم')} disabled={busy} secondary onPress={() => resolve(id,'remote')}/></Card>; })}
-      <Card><Field label={t('New team name','اسم الفريق الجديد')} value={team} onChangeText={setTeam} maxLength={80}/><Button title={t('Create team','إنشاء فريق')} disabled={busy || !team.trim()} onPress={() => run(async () => { const w = await api<Workspace>('/workspaces',{ name:team.trim() }); await refresh(); await selectWorkspace(w.id); setTeam(''); })}/>
-      <Field label={t('Join with invitation code','انضم برمز دعوة')} value={code} onChangeText={setCode} autoCapitalize="none"/><Button title={t('Join team','انضم للفريق')} disabled={busy || !code.trim()} onPress={() => run(async () => { const result = await api<{workspaceId:string}>('/invitations/join',{ code:code.trim() }); await refresh(); await selectWorkspace(result.workspaceId); setCode(''); })}/></Card>
-      <Button title={t('Sign out','خروج')} disabled={busy} secondary onPress={() => run(signOut)}/>
-    </>}
+      <Button title={register ? t('Use existing account','لدي حساب') : t('Register instead','إنشاء حساب جديد')} secondary onPress={() => setRegister(!register)}/></Card>
+    <Security/></ScrollView>;
+  const pending = pendingGuestRecords();
+  return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={{ gap:2 }}><Label big>{s.session.user.name}</Label><Label small>{s.session.user.email}</Label></View>
+    <PlanCard/>
+    <View style={{ gap:8 }}><Eyebrow>{t('WORKSPACES','المساحات')}</Eyebrow>
+      <View style={styles.row}>{s.workspaces.map(w => <Chip key={w.id} title={w.personal ? t('Personal','شخصي') : w.name} active={active?.id === w.id} onPress={() => { if (active?.id !== w.id) run(() => selectWorkspace(w.id)); }}/>)}</View></View>
+    {active && !active.personal && <TeamCard team={active} busy={busy} run={run}/>}
+    {active && pending > 0 && <Card><Label>{t(`${pending} item(s) you saved while offline on this device are not in this workspace yet.`,`${pending} عنصر حفظته دون اتصال على هذا الجهاز ليس في هذه المساحة بعد.`)}</Label><Button title={t('Copy them here','انسخها هنا')} disabled={busy} secondary onPress={importGuest}/></Card>}
+    {s.conflicts.map(id => { const versions = conflictVersions(id); return <Card key={id}><Label big>{t('Resolve conflicting changes','حل تعارض التغييرات')}</Label><Label>{t('Device','الجهاز')}: {JSON.stringify(versions.local ?? 'Deleted')}</Label><Label>{t('Server','الخادم')}: {JSON.stringify(versions.remote ?? 'Deleted')}</Label><Button title={t('Keep device version','احتفظ بنسخة الجهاز')} disabled={busy} onPress={() => resolve(id,'local')}/><Button title={t('Use server version','استخدم نسخة الخادم')} disabled={busy} secondary onPress={() => resolve(id,'remote')}/></Card>; })}
+    <NewTeam busy={busy} run={run}/>
+    <Card><Label big>{t('Your assistant','مساعدك')}</Label><AssistantNameField value={assistant} onChange={setAssistant}/><Button title={t('Save name','حفظ الاسم')} disabled={!cleanAssistantName(assistant) || cleanAssistantName(assistant) === s.assistantName} onPress={() => setAssistantName(assistant)}/></Card>
+    <Card><Label big>{t('Sign-in methods','طرق تسجيل الدخول')}</Label><Label>{t('Link Google, Apple or Meta to sign in to this account with one tap.','اربط Google أو Apple أو Meta لتدخل إلى هذا الحساب بلمسة واحدة.')}</Label><SocialSignIn link onLinked={p => setLinked(p)}/>{!!linked && <Notice>{t('Linked. You can now sign in with it.','تم الربط. يمكنك الدخول به الآن.')}</Notice>}</Card>
+    <Security/>
+    <Button title={t('Sign out','خروج')} disabled={busy} secondary onPress={() => run(signOut)}/>
   </ScrollView>;
+}
+
+function PlanCard() {
+  const s = useStore(), t = useText(), c = useTheme(), plan = s.plan;
+  if (!plan) return null;
+  const until = plan.until ? new Date(plan.until).toLocaleDateString(s.language === 'ar' ? 'ar-EG' : 'en-GB',{ day:'numeric', month:'long' }) : '';
+  const current = !plan.active ? t('Free','مجانية') : plan.plan === 'team' ? t('Team','الفريق') : t('Personal','الشخصية');
+  const rows:[string,string,string,boolean][] = [
+    [t('Free','مجانية'),t('0 EGP','٠ جنيه'),t(`Tasks, notes, habits, reminders and sync. ${PLANS.free.aiPerMonth} AI and voice requests a month.`,`المهام والملاحظات والعادات والتذكيرات والمزامنة. ${PLANS.free.aiPerMonth} طلب ذكاء اصطناعي وصوت شهرياً.`),!plan.active],
+    [t('Personal','الشخصية'),t(`${PLANS.personal.priceEgp} EGP / month`,`${PLANS.personal.priceEgp} جنيه / شهر`),t('Everything in Free, with unlimited AI assistant and voice tasks.','كل ما في المجانية، مع مساعد ذكي ومهام صوتية بلا حدود.'),plan.active && plan.plan === 'personal'],
+    [t('Team','الفريق'),t(`${PLANS.team.priceEgp} EGP / month`,`${PLANS.team.priceEgp} جنيه / شهر`),t(`Teams of up to ${TEAM_MAX_MEMBERS} people with roles and task assignment. Unlimited AI for every member.`,`فرق حتى ${TEAM_MAX_MEMBERS} أشخاص بأدوار وإسناد مهام. ذكاء اصطناعي بلا حدود لكل عضو.`),plan.active && plan.plan === 'team'],
+  ];
+  return <Card><Eyebrow>{t('YOUR PLAN','باقتك')}</Eyebrow>
+    <Label big>{current}{plan.active && until ? t(` · until ${until}`,` · حتى ${until}`) : ''}</Label>
+    {plan.aiLimit !== null ? <View style={{ gap:6 }}><Label small>{t(`AI and voice this month: ${plan.aiUsed} of ${plan.aiLimit}`,`الذكاء الاصطناعي والصوت هذا الشهر: ${plan.aiUsed} من ${plan.aiLimit}`)}</Label>
+      <View style={{ height:6, borderRadius:3, backgroundColor:c.sunk, overflow:'hidden' }}><View style={{ width:`${Math.min(100,plan.aiUsed/plan.aiLimit*100)}%`, height:6, backgroundColor:plan.aiUsed >= plan.aiLimit ? c.danger : c.accent }}/></View></View>
+      : <Label small>{plan.coveredByTeam ? t(`Unlimited AI through the ${plan.coveredByTeam} team.`,`ذكاء اصطناعي بلا حدود عن طريق فريق ${plan.coveredByTeam}.`) : t('Unlimited AI and voice.','ذكاء اصطناعي وصوت بلا حدود.')}</Label>}
+    {rows.map(([name,price,about,on]) => <View key={name} style={{ borderWidth:1, borderColor:on ? c.accent : c.line, backgroundColor:on ? c.accentSoft : 'transparent', borderRadius:14, padding:12, gap:4 }}>
+      <View style={[styles.row,{ justifyContent:'space-between' }]}><Label strong>{name}{on ? t(' · current',' · الحالية') : ''}</Label><Label strong>{price}</Label></View><Label small>{about}</Label></View>)}
+    <Label small>{plan.contact
+      ? t(`To subscribe or renew, contact ${plan.contact} with your email (${s.session?.user.email}). Your plan turns on as soon as payment is confirmed.`,`للاشتراك أو التجديد، تواصل مع ${plan.contact} وأرسل بريدك (${s.session?.user.email}). تتفعّل باقتك فور تأكيد الدفع.`)
+      : t(`To subscribe or renew, contact the app owner with your email (${s.session?.user.email}). Your plan turns on as soon as payment is confirmed.`,`للاشتراك أو التجديد، تواصل مع صاحب التطبيق وأرسل بريدك (${s.session?.user.email}). تتفعّل باقتك فور تأكيد الدفع.`)}</Label>
+  </Card>;
+}
+
+function TeamCard({ team, busy, run }:{ team:Workspace; busy:boolean; run:Run }) {
+  const s = useStore(), t = useText(), c = useTheme(), mine = myRole(), [code,setCode] = useState(''), [invited,setInvited] = useState<Exclude<Role,'owner'>>('member'), [removing,setRemoving] = useState('');
+  useEffect(() => { setCode(''); setRemoving(''); },[team.id]);
+  const roles = assignableRoles(mine) as Exclude<Role,'owner'>[];
+  return <Card><Eyebrow>{t('TEAM','الفريق')}</Eyebrow><Label big>{team.name}</Label>
+    <Label small>{t(`Your role: ${roleName(mine,t)}. ${roleHelp(mine,t)}`,`دورك: ${roleName(mine,t)}. ${roleHelp(mine,t)}`)}</Label>
+    <Label strong>{t(`Members (${s.members.length} of ${TEAM_MAX_MEMBERS})`,`الأعضاء (${s.members.length} من ${TEAM_MAX_MEMBERS})`)}</Label>
+    {s.members.map(m => { const me = m.id === s.session?.user.id, editable = !me && canChangeMember(mine,m.role);
+      return <View key={m.id} style={{ borderTopWidth:1, borderColor:c.line, paddingTop:10, gap:8 }}>
+        <View style={[styles.row,{ justifyContent:'space-between' }]}><Label strong>{m.name}{me ? t(' (you)',' (أنت)') : ''}</Label><Label small>{roleName(m.role,t)}</Label></View>
+        {editable && <View style={styles.row}>{roles.map(r => <Chip key={r} title={roleName(r,t)} active={m.role === r} onPress={() => { if (m.role !== r) run(() => setMemberRole(m.id,r)); }}/>)}
+          <Chip title={removing === m.id ? t('Tap again to remove','اضغط مرة أخرى للحذف') : t('Remove','حذف')} active={false} onPress={() => { if (removing !== m.id) setRemoving(m.id); else run(() => removeMember(m.id)); }}/></View>}
+      </View>; })}
+    {canManageTeam(mine) && <View style={{ gap:8 }}><Label strong>{t('Invite someone','ادعُ شخصاً')}</Label>
+      <View style={styles.row}>{roles.map(r => <Chip key={r} title={roleName(r,t)} active={invited === r} onPress={() => setInvited(r)}/>)}</View>
+      <Label small>{roleHelp(invited,t)}</Label>
+      <Button title={t('Create invitation code','إنشاء رمز دعوة')} disabled={busy || s.members.length >= TEAM_MAX_MEMBERS} secondary onPress={() => run(async () => setCode(await invite(invited)))}/>
+      {!!code && <Field label={t('Send this code (single use, 7 days)','أرسل هذا الرمز (مرة واحدة، ٧ أيام)')} value={code} editable={false} selectTextOnFocus/>}</View>}
+    {mine !== 'owner' && <Button title={t('Leave this team','مغادرة الفريق')} disabled={busy} secondary danger onPress={() => run(leaveTeam)}/>}
+  </Card>;
+}
+
+function NewTeam({ busy, run }:{ busy:boolean; run:Run }) {
+  const s = useStore(), t = useText(), [team,setTeam] = useState(''), [code,setCode] = useState('');
+  const canCreate = !!s.plan?.active && s.plan.plan === 'team';
+  return <Card><Label big>{t('Teams','الفرق')}</Label>
+    {canCreate ? <><Field label={t('New team name','اسم الفريق الجديد')} value={team} onChangeText={setTeam} maxLength={80}/><Button title={t('Create team','إنشاء فريق')} disabled={busy || !team.trim()} onPress={() => run(async () => { const w = await api<Workspace>('/workspaces',{ name:team.trim() }); await refresh(); await selectWorkspace(w.id); setTeam(''); })}/></>
+      : <Label small>{t('Creating a team needs the Team plan. You can still join a team with an invitation code.','إنشاء فريق يحتاج باقة الفريق. ويمكنك الانضمام لفريق برمز دعوة.')}</Label>}
+    <Field label={t('Join with invitation code','انضم برمز دعوة')} value={code} onChangeText={setCode} autoCapitalize="none"/><Button title={t('Join team','انضم للفريق')} disabled={busy || !code.trim()} secondary onPress={() => run(async () => { const result = await api<{workspaceId:string}>('/invitations/join',{ code:code.trim() }); await refresh(); await selectWorkspace(result.workspaceId); setCode(''); })}/></Card>;
 }
 
 function Security() {

@@ -9,6 +9,7 @@ Website: <https://adeltaha123.github.io/Adel-Taha/>
 - Today overview, tasks with search, priority matrix, checklists, schedules, assignment and undo; notes and habits.
 - 4-digit PIN lock, with optional unlock like the phone itself: Face ID, fingerprint, or the phone's own PIN. On the website the browser's Face ID / fingerprint login is used where available.
 - Accounts, automatic sync, offline edits, conflict resolution, and personal/team workspaces with single-use invitations.
+- Plans: Free (20 AI/voice requests a month), Personal (149 EGP/month, unlimited AI), and Team (499 EGP/month, up to 10 members with Owner, Admin, Member and Viewer roles; unlimited AI for every member). See [plans and roles](docs/PLANS.md).
 - Assistant: server-backed AI chat, voice transcription, speech playback, and reviewed task/note suggestions. See [setup and privacy](docs/ASSISTANT.md).
 - English/Arabic typed commands that work offline, and local task check-ins with snooze. See [reminders and saving](docs/TASK-CHECKINS.md).
 
@@ -31,6 +32,14 @@ npm run server:online
 ```
 
 It starts the API, opens a free Cloudflare tunnel, and saves the tunnel's address to the `server-address` branch, where the app looks it up. The address changes on every start; keep the window open while you use the app, and press Ctrl+C to stop it. The data lives on your PC in `data/my-pa.sqlite`.
+
+To turn on a subscription after someone pays (run on the PC with the database):
+
+```sh
+npm run plan                                  # list accounts and plans
+npm run plan -- someone@mail.com personal 1   # Personal for 1 month
+npm run plan -- someone@mail.com team 3       # Team for 3 months
+```
 
 ```sh
 npm run check        # type checks, unit and API tests, API build

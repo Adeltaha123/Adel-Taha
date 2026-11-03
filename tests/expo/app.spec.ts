@@ -140,10 +140,14 @@ test('Expo account sync isolates device records and imports explicitly',async ({
   await page.getByLabel('Email',{ exact:true }).fill(`expo-${Date.now()}@example.test`);
   await page.getByLabel('Password (10+ characters)',{ exact:true }).fill('long-password-123');
   await page.getByRole('button',{ name:'Create account',exact:true }).click();
-  await expect(page.getByRole('button',{name:'✓ Personal',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Personal',exact:true})).toBeVisible();
+  await expect(page.getByText('AI and voice this month: 0 of 20',{exact:true})).toBeVisible(); // New accounts start on Free.
+  await expect(page.getByText('Creating a team needs the Team plan. You can still join a team with an invitation code.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Sync now',exact:true})).toHaveCount(0);
+  await page.screenshot({ path:'mobile/.expo/preview-account-plan.png',fullPage:true });
   await page.getByRole('button',{ name:'Library',exact:true }).click(); await page.getByRole('button',{ name:'Notes',exact:true }).click(); await expect(page.getByText('Device note',{ exact:true })).toHaveCount(0);
-  await page.getByRole('button',{ name:'Account',exact:true }).click(); await page.getByRole('button',{ name:'Copy device records here',exact:true }).click();
-  await page.getByRole('button',{ name:'Sync now',exact:true }).click();
+  await page.getByRole('button',{ name:'Account',exact:true }).click(); await page.getByRole('button',{ name:'Copy them here',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Copy them here',exact:true })).toHaveCount(0); // Shown only while there is something to copy.
   await expect(page.getByText('Synced',{ exact:true }).first()).toBeVisible();
   await page.getByRole('button',{ name:'Sign out',exact:true }).click(); await page.getByRole('button',{name:'Continue offline',exact:true}).click();
   await page.getByRole('button',{ name:'Library',exact:true }).click(); await page.getByRole('button',{ name:'Notes',exact:true }).click(); await expect(page.getByText('Device note',{ exact:true })).toBeVisible();
