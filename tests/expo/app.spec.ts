@@ -38,8 +38,8 @@ test('login, picked schedule, check-in and database autosave work together',asyn
   await page.getByRole('button',{name:/^\d{4}-\d{2}-01$/}).click();
   await page.getByRole('button',{name:'09:00',exact:true}).click();await page.getByRole('button',{name:'00',exact:true}).first().click();await page.getByRole('button',{name:'Set time',exact:true}).click();
   await page.getByRole('button',{name:'Save task',exact:true}).click();
-  await expect(page.getByText('Have you completed this task?',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'In 10 minutes',exact:true}).click();await expect(page.getByText('Have you completed this task?',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'⏰ In 30 min',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'⏰ In 30 min',exact:true}).click();await expect(page.getByRole('button',{name:'⏰ In 30 min',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Complete',exact:true}).click();
   const auth=await page.request.post('http://127.0.0.1:3012/api/auth/login',{data:{email,password}});const token=(await auth.json()).token;
   const headers={authorization:`Bearer ${token}`};const workspaces=await(await page.request.get('http://127.0.0.1:3012/api/workspaces',{headers})).json();
