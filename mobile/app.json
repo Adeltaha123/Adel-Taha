@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "My PA",
+    "slug": "my-pa",
+    "version": "0.1.0",
+    "scheme": "mypa",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.adeltaha.mypa.expo"
+    },
+    "android": {
+      "package": "com.adeltaha.mypa.expo"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "اسمح لـ My PA بتسجيل رسالتك الصوتية وتحويلها إلى نص.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}
