@@ -1,5 +1,7 @@
-name: Publish web app manually
+name: Publish web app
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,7 +19,8 @@ jobs:
           cache: npm
       - uses: actions/configure-pages@v5
       - run: npm ci
-      - run: npm run check
+      # The Check application workflow runs the full test suite; publishing only needs the build.
+      - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
       - uses: actions/upload-pages-artifact@v4

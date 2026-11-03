@@ -8,7 +8,7 @@ async function filesIn(directory) {
     ? filesIn(join(directory, entry.name)) : [join(directory, entry.name)]));
   return results.flat();
 }
-const files = (await filesIn('dist')).filter(file => !file.endsWith('.nojekyll') && !file.endsWith('sw.js')).sort();
+const files = (await filesIn('dist')).filter(file => !file.endsWith('sw.js')).sort();
 const hash = createHash('sha256');
 for (const file of files) {
   hash.update(relative('dist', file).replaceAll('\\', '/'));

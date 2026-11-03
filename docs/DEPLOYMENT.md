@@ -20,7 +20,7 @@ The health endpoint is /api/health. Use SQLite-aware backups or stop the API bef
 
 Set VITE_API_URL to the public HTTPS API origin before building, for example https://api.example.com (without /api). This public URL is not a secret. Alternatively, reverse-proxy /api on the web frontend origin.
 
-Run npm run build and host dist over HTTPS. GitHub Pages only hosts the frontend. Its manual workflow reads the VITE_API_URL repository variable; accounts require a separately hosted API. No deployment has been triggered.
+Run npm run build and host dist over HTTPS. GitHub Pages only hosts the frontend: the Publish web app workflow builds and deploys it on every push to main (or manually from Actions). In the repository's Settings → Pages, Source must be GitHub Actions. The workflow reads the VITE_API_URL repository variable; accounts require a separately hosted API, and without one the site works on each device only.
 
 For mobile, set the public API origin before npm run mobile:sync. A phone's localhost refers to the phone, not the PC. Build/sign in Android Studio or Xcode.
 
