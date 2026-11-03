@@ -37,11 +37,16 @@ export async function createApi(options: { databasePath?: string; origins?: stri
     reply.code(status).send({ error: status >= 500 && !(error instanceof PublicError) ? 'The server could not complete this request.' : (error as Error).message });
   });
 
+  const DAY_MS = 24 * 3600_000, SESSION_MS = 30 * DAY_MS;
   function userFor(request: FastifyRequest): User {
     const token = request.headers.authorization?.match(/^Bearer ([a-zA-Z0-9_-]{43})$/)?.[1];
     if (!token) throw new HttpError(401, 'Sign in to continue.');
-    const user = db.prepare('SELECT u.id,u.email,u.name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?').get(hash(token), Date.now()) as unknown as User | undefined;
-    if (!user) throw new HttpError(401, 'Your session expired. Sign in again.');
+    const now = Date.now();
+    const row = db.prepare('SELECT u.id,u.email,u.name,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?').get(hash(token), now) as unknown as (User & { expires: number }) | undefined;
+    if (!row) throw new HttpError(401, 'Your session expired. Sign in again.');
+    // Sliding expiry: a session in use is renewed (at most daily), so people sign in once per device.
+    if (row.expires - now < SESSION_MS - DAY_MS) db.prepare('UPDATE sessions SET expires=? WHERE hash=?').run(now + SESSION_MS, hash(token));
+    const { expires: _, ...user } = row;
     return user;
   }
   function workspaceFor(request: FastifyRequest): { user: User; workspace: Workspace } {
@@ -60,7 +65,7 @@ export async function createApi(options: { databasePath?: string; origins?: stri
   function session(user: User) {
     db.prepare('DELETE FROM sessions WHERE expires<=?').run(Date.now());
     const token = randomBytes(32).toString('base64url');
-    db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(hash(token), user.id, Date.now() + 24 * 3600_000);
+    db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(hash(token), user.id, Date.now() + SESSION_MS);
     return { token, user };
   }
   registerAssistant(app,userFor,options.assistant);

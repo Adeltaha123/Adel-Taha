@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export async function recordingPayload(uri:string) {
   if (Platform.OS !== 'web') {
     const info = await FileSystem.getInfoAsync(uri);
@@ -12,3 +13,15 @@ export async function recordingPayload(uri:string) {
   return { audio,format:blob.type.includes('mp4') ? 'm4a' as const : 'webm' as const };
 }
 export async function discardRecording(uri:string) { if (Platform.OS !== 'web') await FileSystem.deleteAsync(uri,{ idempotent:true }).catch(() => {}); }
+// An unsent recording's file is remembered per screen, so it survives the app being closed. Browser
+// recordings are in-memory blob URLs that end with the page, so only native files are remembered.
+const keptKey = (key:string) => `mypa_voice_kept:${key}`;
+export async function keepRecording(key:string, uri:string) { if (Platform.OS !== 'web') await AsyncStorage.setItem(keptKey(key),uri).catch(() => {}); }
+export async function forgetKept(key:string) { await AsyncStorage.removeItem(keptKey(key)).catch(() => {}); }
+export async function keptRecording(key:string) {
+  if (Platform.OS === 'web') return null;
+  const uri = await AsyncStorage.getItem(keptKey(key)).catch(() => null);
+  if (uri && (await FileSystem.getInfoAsync(uri)).exists) return uri;
+  if (uri) await forgetKept(key);
+  return null;
+}

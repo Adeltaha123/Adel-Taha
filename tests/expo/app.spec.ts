@@ -226,3 +226,47 @@ test('the app asks for a new PIN once, then locks again and accepts only that PI
   await type(page,'9999');await expect(page.getByText('Wrong PIN',{exact:true})).toBeVisible();
   await type(page,'1234');await expect(page.getByText('Continue offline',{exact:true})).toBeVisible();
 });
+async function registerVoiceUser(page:Page,prefix:string){
+  await page.goto('/'); await page.getByRole('button',{name:'Continue offline',exact:true}).click(); await page.getByRole('button',{ name:'Account',exact:true }).click();
+  await page.getByRole('button',{ name:'Register instead',exact:true }).click();
+  await page.getByLabel('Name',{ exact:true }).fill('Kept User');
+  await page.getByLabel('Email',{ exact:true }).fill(`${prefix}-${Date.now()}@example.test`);
+  await page.getByLabel('Password (10+ characters)',{ exact:true }).fill('long-password-123');
+  await page.getByRole('button',{ name:'Create account',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Sign out',exact:true })).toBeVisible();
+}
+test('signing in once is remembered after the page reloads',async({page})=>{
+  await registerVoiceUser(page,'once');
+  await page.reload();
+  await page.getByRole('button',{ name:'Account',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Sign out',exact:true })).toBeVisible();
+  await expect(page.getByText('Welcome back',{exact:true})).toHaveCount(0);
+});
+test('leaving the app while recording keeps the recording, and unsaved tasks survive closing the screen',async({page})=>{
+  test.setTimeout(120000);
+  await page.context().grantPermissions(['microphone']);
+  let uploads = 0;
+  await page.route('**/api/assistant/transcribe',route => ++uploads === 1 ? route.fulfill({ status:503,json:{ error:'Transcription is busy. Try again.' } }) : route.fulfill({ json:{ text:'Call the dentist tomorrow' } }));
+  await page.route('**/api/assistant/status',route => route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
+  await page.route('**/api/assistant/chat',route => route.fulfill({ json:{ reply:'I found 1 task.',actions:[{ type:'add_task',title:'Call the dentist',due:null,time:null,targetId:null,priority:2 }] } }));
+  await registerVoiceUser(page,'kept');
+  const visibility=(state:'hidden'|'visible')=>page.evaluate(value=>{Object.defineProperty(document,'visibilityState',{value,configurable:true});document.dispatchEvent(new Event('visibilitychange'));},state);
+  await page.getByRole('button',{ name:'Say a task',exact:true }).click();
+  await page.getByRole('button',{ name:'Start recording',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Stop recording',exact:true })).toBeVisible();
+  await page.waitForTimeout(1200);
+  await visibility('hidden'); await page.waitForTimeout(500); await visibility('visible'); // The phone screen turns off and on.
+  await expect(page.getByText('Transcription is busy. Try again.',{exact:true})).toBeVisible();
+  await expect(page.getByText('Your last recording is saved but not turned into text yet.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{ name:'Try again',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Save this task',exact:true })).toBeVisible();
+  expect(uploads).toBe(2);
+  await page.getByRole('button',{ name:'Close',exact:true }).click();
+  await page.getByRole('button',{ name:'Say a task',exact:true }).click();
+  await expect(page.getByText('Your unsaved tasks from last time are back.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{ name:'Save this task',exact:true }).click();
+  await page.getByRole('button',{ name:'Tasks',exact:true }).click();
+  await expect(page.getByText('Call the dentist',{ exact:true })).toBeVisible();
+  await page.getByRole('button',{ name:'Say a task',exact:true }).first().click();
+  await expect(page.getByText('Your unsaved tasks from last time are back.',{exact:true})).toHaveCount(0);
+});

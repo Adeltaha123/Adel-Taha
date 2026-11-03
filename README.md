@@ -50,6 +50,6 @@ See [architecture](docs/ARCHITECTURE.md) and [deployment](docs/DEPLOYMENT.md).
 
 ## Limits
 
-The PIN hides the app from other people; it does not encrypt stored data. Cloud sync covers text records and assignments, not audio. Server passwords are hashed and sessions last 24 hours. Email verification, password recovery, and account deletion are not implemented.
+The PIN hides the app from other people; it does not encrypt stored data. Cloud sync covers text records and assignments, not audio. Server passwords are hashed. A sign-in lasts 30 days and renews while the app is used, so each device signs in once. Email verification, password recovery, and account deletion are not implemented.
 
 The website works on each device without an account. Accounts, sync, and the assistant need the API hosted somewhere public (GitHub Pages only hosts the website). Microphone, notifications, and Face ID still need testing on real phones; signed store builds have not been produced.

@@ -3,7 +3,7 @@ import {Modal,ScrollView,View,Text,ActivityIndicator,TextInput,Pressable} from '
 import {randomUUID} from 'expo-crypto';
 import type {AssistantAction} from '../../../../shared/assistant';
 import {proposedRecord} from '../../../../shared/assistant';
-import {change,useStore} from '../../data/store';
+import {change,loadVoiceDraft,saveVoiceDraft,useStore} from '../../data/store';
 import {understandTasks,voiceStatus} from '../../services/assistant';
 import {VoiceInput} from '../VoiceInput';
 import {Button,Card,Eyebrow,Field,IconButton,Label,Notice,Page,styles,useText} from '../../app/ui';
@@ -14,8 +14,12 @@ type Draft=AssistantAction&{key:string};
 const isArabic=(s:string)=>/[؀-ۿ]/.test(s);
 /* Say one task or many in one go; the assistant splits them and every proposal stays editable until saved. */
 export function VoiceTask({close}:{close:()=>void}) {
-  const s=useStore(),t=useText(),c=useTheme(),[reason,setReason]=useState<string|null|undefined>(undefined),[text,setText]=useState(''),[drafts,setDrafts]=useState<Draft[]>([]),[reply,setReply]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[voiceBusy,setVoiceBusy]=useState(false),[open,setOpen]=useState<string|null>(null),alive=useRef(true),saved=useRef(false);
-  useEffect(()=>{void voiceStatus(!!s.session,t).then(r=>{if(alive.current)setReason(r);});return()=>{alive.current=false;};},[]);
+  const s=useStore(),t=useText(),c=useTheme(),[reason,setReason]=useState<string|null|undefined>(undefined),[text,setText]=useState(''),[drafts,setDrafts]=useState<Draft[]>([]),[reply,setReply]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[voiceBusy,setVoiceBusy]=useState(false),[open,setOpen]=useState<string|null>(null),alive=useRef(true),saved=useRef(false),loaded=useRef(false),[restored,setRestored]=useState(false);
+  useEffect(()=>{void voiceStatus(!!s.session,t).then(r=>{if(alive.current)setReason(r);});
+    void loadVoiceDraft().then(d=>{if(!alive.current)return;if(d){setText(d.text);setDrafts(d.drafts as Draft[]);setReply(d.reply);setRestored(true);}loaded.current=true;});
+    return()=>{alive.current=false;};},[]);
+  // Unsaved text and drafts are kept on the device until they are saved or the user starts over.
+  useEffect(()=>{if(loaded.current&&!saved.current)saveVoiceDraft({text,drafts,reply});},[text,drafts,reply]);
   const available=reason===null;
   async function interpret(value:string,signal?:AbortSignal){
     setText(value);setError('');setReply('');setDrafts([]);if(!value.trim())return;setBusy(true);
@@ -29,12 +33,13 @@ export function VoiceTask({close}:{close:()=>void}) {
     const valid=list.filter(a=>a.title.trim());if(saved.current||!valid.length)return;saved.current=true;
     const now=Date.now(),records={...s.records};
     valid.forEach((a,i)=>{const id=randomUUID();records[id]=proposedRecord({...a,title:a.title.trim().slice(0,500)},id,now+i) as unknown as Record<string,unknown>;});
-    change(records);close(); // One change, so a single Undo removes the whole batch.
+    saveVoiceDraft(null);change(records);close(); // One change, so a single Undo removes the whole batch.
   }
   return <Modal visible animationType="slide" onRequestClose={close}><Page><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
     <View style={[styles.row,{justifyContent:'space-between',flexWrap:'nowrap'}]}><View style={{flex:1,gap:4}}><Eyebrow>{t('VOICE TASKS','مهام صوتية')}</Eyebrow><Label big>{t('Say it. Save it.','قلها، وسجّلها.')}</Label></View><IconButton icon="close" label={t('Close','إغلاق')} onPress={close}/></View>
     <Label>{t('Say one task or ten in one go: "Call Ahmed tomorrow at 10, send the offer today, and follow up with Hala on Sunday."','قل مهمة واحدة أو عشرة مرة واحدة: «كلّم أحمد بكرة الساعة ١٠، وابعت العرض النهاردة، وتابع مع هالة يوم الحد».')}</Label>
-    <Card>{reason===undefined?<ActivityIndicator color={c.accent}/>:<VoiceInput available={available} unavailable={reason??undefined} onText={interpret} onBusyChange={setVoiceBusy}/>}</Card>
+    <Card>{reason===undefined?<ActivityIndicator color={c.accent}/>:<VoiceInput keepKey="tasks" available={available} unavailable={reason??undefined} onText={interpret} onBusyChange={setVoiceBusy}/>}</Card>
+    {restored&&<Notice>{t('Your unsaved tasks from last time are back.','مهامك غير المحفوظة من المرة السابقة رجعت.')}</Notice>}
     {!!reason&&<Notice>{reason}</Notice>}
     {!drafts.length&&<><Field label={t('What you said','ما قلته')} placeholder={t('Or type your tasks here…','أو اكتب مهامك هنا…')} value={text} editable={!busy&&!voiceBusy} onChangeText={setText} multiline maxLength={4000}/>
       {!!text.trim()&&!busy&&<View style={{gap:10}}>
@@ -43,7 +48,7 @@ export function VoiceTask({close}:{close:()=>void}) {
     {busy&&<View style={[styles.row,{justifyContent:'center'}]}><ActivityIndicator color={c.accent}/><Label>{t('Splitting your tasks…','أقسّم مهامك…')}</Label></View>}
     {!!error&&<Notice tone="error">{error}</Notice>}
     {drafts.length>0&&<View style={{gap:12}}>
-      <View style={[styles.row,{justifyContent:'space-between'}]}><Eyebrow>{t(`${drafts.length} TASK${drafts.length===1?'':'S'} READY`,`${drafts.length} مهام جاهزة`)}</Eyebrow><Pressable accessibilityRole="button" onPress={()=>{setDrafts([]);setReply('');}}><Text style={{color:c.accent,fontWeight:'600'}}>{t('Start over','ابدأ من جديد')}</Text></Pressable></View>
+      <View style={[styles.row,{justifyContent:'space-between'}]}><Eyebrow>{t(`${drafts.length} TASK${drafts.length===1?'':'S'} READY`,`${drafts.length} مهام جاهزة`)}</Eyebrow><Pressable accessibilityRole="button" onPress={()=>{setDrafts([]);setReply('');setRestored(false);}}><Text style={{color:c.accent,fontWeight:'600'}}>{t('Start over','ابدأ من جديد')}</Text></Pressable></View>
       {!!reply&&<Label small>{reply}</Label>}
       {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===(d.priority??2))??QUADRANTS[1]!,expanded=open===d.key;
         return <View key={d.key} style={{backgroundColor:c.surface,borderRadius:18,borderWidth:1,borderColor:c.line,overflow:'hidden'}}>

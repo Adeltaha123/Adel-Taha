@@ -57,7 +57,7 @@ export function Assistant() {
   </ScrollView>
   <View style={{ paddingHorizontal:16,paddingVertical:12,gap:10,borderTopWidth:1,borderColor:c.line,backgroundColor:c.surface }}>
     <Field label={t('Message your assistant','رسالتك للمساعد')} value={draft} onChangeText={setDraft} multiline maxLength={4000} editable={!busy && !voiceBusy} placeholder={s.assistantName ? t(`Ask ${s.assistantName} anything…`,`اسأل ${s.assistantName} أي شيء…`) : t('What would you like to do?','كيف أساعدك؟')}/>
-    <View style={[styles.row,{ flexWrap:'nowrap',alignItems:'flex-start' }]}><View style={{ flex:1 }}><VoiceInput compact available={enabled} unavailable={reason ?? undefined} onBusyChange={setVoiceBusy} onText={text => { if (alive.current) setDraft(text); }}/></View>
+    <View style={[styles.row,{ flexWrap:'nowrap',alignItems:'flex-start' }]}><View style={{ flex:1 }}><VoiceInput compact keepKey="assistant" available={enabled} unavailable={reason ?? undefined} onBusyChange={setVoiceBusy} onText={text => { if (alive.current) setDraft(text); }}/></View>
       <Button icon="send" title={busy ? t('Working…','جارٍ العمل…') : t('Send','إرسال')} disabled={!enabled || busy || voiceBusy || !draft.trim()} onPress={() => void send()}/></View>
     <Label small>{t('Voice is transcribed for review. Sending shares your message and up to 50 tasks with OpenAI.','راجع النص قبل إرساله. الإرسال يشارك رسالتك وحتى ٥٠ مهمة مع OpenAI.')}</Label></View></View>;
 }

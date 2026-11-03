@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
@@ -8,6 +7,7 @@ import { useSyncExternalStore } from 'react';
 import type { Member, User, Workspace, SyncResult } from '../../../shared/api';
 import { mergeRecords, mutationsFor, type Records, type Baseline } from '../../../shared/sync';
 import { cleanAssistantName } from '../../../shared/assistant';
+import { deleteSecret, getSecret, setSecret } from '../platform/secure';
 type Session = { token:string; user:User };
 type Scope = { records:Records; baseline:Baseline; conflicts:string[] };
 type Theme = 'system'|'light'|'dark';
@@ -67,7 +67,7 @@ export async function initialize() {
       if (!parsed.scopes?.guest || !['en','ar'].includes(parsed.language)) throw new Error('Stored data could not be read. Do not clear app storage; restore a backup first.');
       saved = parsed;
     }
-    const token = Platform.OS === 'web' ? null : await SecureStore.getItemAsync('mypa_session');
+    const token = await getSecret('mypa_session'); // Kept until sign-out, so the app signs in once per device.
     patch({ ready:true, records:saved.scopes.guest!.records, language:saved.language, focusEnd:saved.focusEnd, theme:saved.theme ?? 'system', assistantName:saved.assistantName ?? '', session:token ? JSON.parse(token) : null });
     if (state.session) {
       if (saved.activeScope?.startsWith(`${state.session.user.id}:`) && saved.scopes[saved.activeScope]) patch({scope:saved.activeScope,records:saved.scopes[saved.activeScope]!.records,conflicts:saved.scopes[saved.activeScope]!.conflicts});
@@ -120,12 +120,13 @@ export async function api<T>(path:string, body?:unknown, timeout=15000,signal?:A
       throw new Error(ar() ? `تعذّر الوصول إلى خادم My PA على ${origin}. شغّل npm run expo:dev على الكمبيوتر وتأكد أن الهاتف على نفس شبكة Wi-Fi.` : `Can't reach the My PA server at ${origin}. Run npm run expo:dev on your computer and keep the phone on the same Wi-Fi.`);
     }
     const result = await response.json().catch(() => ({ error:'API returned an invalid response.' }));
+    if (response.status === 401 && state.session && path !== '/auth/logout') await forgetSession();
     if (!response.ok) throw new Error(result.error ?? `Request failed (${response.status})`);
     return result;
   } finally { clearTimeout(timer);signal?.removeEventListener('abort',abort); }
 }
 export async function acceptSession(session:Session) {
-  if (Platform.OS !== 'web') await SecureStore.setItemAsync('mypa_session',JSON.stringify(session));
+  await setSecret('mypa_session',JSON.stringify(session));
   patch({session});await refresh();
 }
 export async function finishSignIn() { await loadPreferences(); const personal=state.workspaces.find(w=>w.personal);if(personal)await selectWorkspace(personal.id); }
@@ -178,10 +179,14 @@ export async function signOut() {
   patch({ busy:true });
   try {
     try { await api('/auth/logout', {}); } catch { /* Local logout works offline. */ }
-    if (Platform.OS !== 'web') await SecureStore.deleteItemAsync('mypa_session');
-    delete saved.assistantName; persist(); // The name belongs to the account, not the phone.
-    undo = null; patch({ assistantName:'', askName:false, session:null, scope:'guest', records:saved.scopes.guest!.records, conflicts:[], members:[], workspaces:[], undo:false, status:'' });
+    await forgetSession();
   } finally { patch({ busy:false }); }
+}
+/** Drops the session on this device and returns to device records; the server session is already gone or expired. */
+async function forgetSession() {
+  await deleteSecret('mypa_session');
+  delete saved.assistantName; persist(); // The name belongs to the account, not the phone.
+  undo = null; patch({ assistantName:'', askName:false, session:null, scope:'guest', records:saved.scopes.guest!.records, conflicts:[], members:[], workspaces:[], undo:false, status:'' });
 }
 export async function sync() {
   if (state.busy || !state.session || state.scope === 'guest') return;
@@ -223,4 +228,13 @@ export function importGuest() {
   const records = { ...state.records };
   for (const [id,record] of Object.entries(saved.scopes.guest!.records)) if (!records[id]) { records[id] = { ...record }; delete records[id]!.assigneeId; }
   change(records);
+}
+// What the voice task screen has heard or drafted but not saved yet, so closing the screen or the app keeps it.
+export type VoiceDraft = { text:string; drafts:unknown[]; reply:string };
+const VOICE_DRAFT = 'mypa_voice_task_draft';
+export async function loadVoiceDraft():Promise<VoiceDraft|null> {
+  try { const value = JSON.parse(await AsyncStorage.getItem(VOICE_DRAFT) ?? 'null') as VoiceDraft|null; return value && (value.text?.trim() || value.drafts?.length) ? value : null; } catch { return null; }
+}
+export function saveVoiceDraft(value:VoiceDraft|null) {
+  void (value && (value.text.trim() || value.drafts.length) ? AsyncStorage.setItem(VOICE_DRAFT,JSON.stringify(value)) : AsyncStorage.removeItem(VOICE_DRAFT)).catch(() => {});
 }
