@@ -4,6 +4,9 @@
 // and marks the server offline.
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { Resolver } from 'node:dns';
+import http from 'node:http';
+import https from 'node:https';
 import { Tunnel, bin, install } from 'cloudflared';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -15,9 +18,19 @@ const WEBSITE = 'https://adeltaha123.github.io';
 const origins = [...new Set([...(process.env.API_ORIGINS ?? '').split(','), WEBSITE, 'http://localhost:8081', 'http://127.0.0.1:8081'].map(o => o.trim()).filter(Boolean))];
 
 const wait = ms => new Promise(done => setTimeout(done, ms));
+// A new tunnel name does not exist in DNS for its first seconds, and resolvers (Windows included) then
+// cache that miss for minutes. So the check waits before its first lookup and uses public resolvers
+// rather than the PC's cache.
+const resolver = new Resolver(); resolver.setServers(['1.1.1.1', '8.8.8.8', '1.0.0.1', '8.8.4.4']);
+const lookup = (host, options, done) => resolver.resolve4(host, (error, addresses) =>
+  error ? done(error) : options.all ? done(null, addresses.map(address => ({ address, family:4 }))) : done(null, addresses[0], 4));
+const get = url => new Promise(resolve => {
+  const request = (url.startsWith('https:') ? https : http).get(url, url.startsWith('https:') ? { lookup, timeout:5000 } : { timeout:5000 }, response => { response.resume(); resolve(response.statusCode === 200); });
+  request.on('error', () => resolve(false)).on('timeout', () => { request.destroy(); resolve(false); });
+});
 async function healthy(origin, tries) {
   for (let i = 0; i < tries; i++) {
-    try { if ((await fetch(`${origin}/api/health`)).ok) return true; } catch {}
+    if (await get(`${origin}/api/health`)) return true;
     await wait(1000);
   }
   return false;
@@ -47,8 +60,11 @@ if (!await healthy(local, 30)) { console.error(`The API did not start on ${local
 if (!existsSync(bin)) { console.log('Downloading Cloudflare tunnel…'); await install(bin); }
 tunnel = Tunnel.quick(local);
 tunnel.on('exit', () => { if (!closing) { console.error('The tunnel stopped.'); void close(1); } });
+const connected = new Promise(resolve => tunnel.once('connected', resolve));
 const url = await new Promise(resolve => tunnel.once('url', resolve));
-// A new quick-tunnel name can take a few seconds before it resolves.
+await connected;
+console.log('Tunnel connected. Checking it from the internet…');
+await wait(15000);
 if (!await healthy(url, 60)) { console.error(`The tunnel ${url} did not answer. Check the internet connection and try again.`); await close(1); }
 try { publish(url); published = true; }
 catch (e) { console.error(`Could not save the address to GitHub (${e.message}). The app cannot find the server until it is saved.`); await close(1); }
