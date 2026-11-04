@@ -6,6 +6,7 @@ import { api, authenticate, conflictVersions, importGuest, invite, leaveTeam, my
 import { Button, Card, Chip, Eyebrow, Field, Label, Notice, styles, useText, useTheme } from '../app/ui';
 import { SocialSignIn } from './SocialSignIn';
 import { Admin } from './Admin';
+import { InstallCard } from './Install';
 import { AssistantNameField } from './AssistantName';
 import { setAssistantName } from '../data/store';
 import { cleanAssistantName } from '../../../shared/assistant';
@@ -47,6 +48,7 @@ export function Account() {
     <NewTeam busy={busy} run={run}/>
     <Card><Label big>{t('Your assistant','مساعدك')}</Label><AssistantNameField value={assistant} onChange={setAssistant}/><Button title={t('Save name','حفظ الاسم')} disabled={!cleanAssistantName(assistant) || cleanAssistantName(assistant) === s.assistantName} onPress={() => setAssistantName(assistant)}/></Card>
     <Card><Label big>{t('Sign-in methods','طرق تسجيل الدخول')}</Label><Label>{t('Link Google, Apple or Meta to sign in to this account with one tap.','اربط Google أو Apple أو Meta لتدخل إلى هذا الحساب بلمسة واحدة.')}</Label><SocialSignIn link onLinked={p => setLinked(p)}/>{!!linked && <Notice>{t('Linked. You can now sign in with it.','تم الربط. يمكنك الدخول به الآن.')}</Notice>}</Card>
+    <InstallCard/>
     <Security/>
     <Button title={t('Sign out','خروج')} disabled={busy} secondary onPress={() => run(signOut)}/>
   </ScrollView>;

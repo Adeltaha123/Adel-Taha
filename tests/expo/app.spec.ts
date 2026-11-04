@@ -262,6 +262,14 @@ test('leaving the app while recording keeps the recording, and unsaved tasks sur
   await expect(page.getByRole('button',{ name:'Stop recording',exact:true })).toBeVisible();
   await page.waitForTimeout(1200);
   await visibility('hidden'); await page.waitForTimeout(500); await visibility('visible'); // The phone screen turns off and on.
+  // Locking the screen pauses the recording instead of ending it; the user continues where they stopped.
+  await expect(page.getByText(/^Paused · \d+ \/ 120 sec$/)).toBeVisible();
+  expect(uploads).toBe(0);
+  await page.getByRole('button',{ name:'Continue recording',exact:true }).click();
+  await expect(page.getByRole('button',{ name:'Pause',exact:true })).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.getByRole('button',{ name:'Pause',exact:true }).click(); // Pausing by hand works the same way.
+  await page.getByRole('button',{ name:'Stop and send',exact:true }).click();
   await expect(page.getByText('Transcription is busy. Try again.',{exact:true})).toBeVisible();
   await expect(page.getByText('Your last recording is saved but not turned into text yet.',{exact:true})).toBeVisible();
   await page.getByRole('button',{ name:'Try again',exact:true }).click();

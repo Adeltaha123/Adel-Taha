@@ -1,11 +1,5 @@
-// Retires the service worker from the earlier web app, which cached that app for offline use.
-// Browsers that still run it fetch this file, install it, and then: delete the old caches,
-// unregister, and reload open tabs so they load the current app from the network.
+// Lets browsers install My PA on the home screen. Every request goes to the network as usual: nothing is cached,
+// so the app always loads its newest version and the API is never served stale.
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    await Promise.all((await caches.keys()).map(key => caches.delete(key)));
-    await self.registration.unregister();
-    for (const client of await self.clients.matchAll({ type:'window' })) client.navigate(client.url);
-  })());
-});
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', () => {});

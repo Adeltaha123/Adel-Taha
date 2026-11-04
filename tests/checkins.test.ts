@@ -14,7 +14,9 @@ test('check-ins respect due times, completion, snooze, dismissal and schedule ch
   assert.deepEqual(upcomingCheckIns([task],due).map(c=>c.kind),['followup']); // The reminder has passed; the follow-up is still to come.
   assert.equal(upcomingCheckIns([task],due+FOLLOW_UP_MS).length,0);
   assert.equal(upcomingCheckIns(Array.from({length:70},(_,i)=>({...task,id:String(i)})),due-1).length,60);
-  assert.equal(checkInTime({...task,time:null}),null);
+  assert.equal(checkInTime({...task,time:null}),new Date('2026-10-30T09:00:00').getTime()); // A date alone is reminded about that morning.
+  assert.equal(checkInTime({...task,due:null}),null);
+  assert.equal(checkInTime({...task,time:'25:99'}),null);
 });
 test('conversation text and snooze metadata are valid database mutations',()=>{
   const record={id:'assistant_history_user',kind:'conversation',messages:[{id:'message-1',role:'user',content:'خطط ليومي'}]};
@@ -30,8 +32,16 @@ test('each task gets a reminder at its time and a follow-up an hour later; a sno
   const moved=moveToTomorrow({...task,checkInAfter:due+1800000,checkInDismissedFor:scheduleKey(task)},new Date(2026,9,31,8,0));
   assert.equal(moved.due,'2026-11-01');assert.equal(moved.time,'21:00');assert.equal(moved.checkInAfter,undefined);assert.equal(moved.checkInDismissedFor,undefined);
 });
+test('a task with only a date is reminded about at 09:00 on its day and asked about at 20:00',()=>{
+  const task:Task={id:'t',kind:'task',title:'Send the invoice',q:1,done:false,items:[],due:'2026-11-06',time:null};
+  const morning=new Date('2026-11-06T09:00:00').getTime(), evening=new Date('2026-11-06T20:00:00').getTime();
+  assert.deepEqual(checkInsFor(task),[{kind:'due',at:morning},{kind:'followup',at:evening}]);
+  assert.deepEqual(checkInsFor({...task,checkInAfter:morning+3600000}),[{kind:'followup',at:morning+3600000}]); // A snooze asks once.
+  assert.equal(checkInMessage(task,'due',morning,'ar').body,'📋 النهاردة: «Send the invoice»');
+  assert.equal(checkInMessage(task,'followup',evening,'en').body,'Did you get “Send the invoice” done today? ✅');
+});
 test('check-in wording greets by time of day and name, in the app language',()=>{
-  const task:Task={id:'t',kind:'task',title:'كلّم أحمد',q:2,done:false,items:[]};
+  const task:Task={id:'t',kind:'task',title:'كلّم أحمد',q:2,done:false,items:[],due:'2026-10-30',time:'21:00'};
   const evening=new Date(2026,9,30,21,0).getTime(),morning=new Date(2026,9,30,8,0).getTime();
   assert.equal(checkInMessage(task,'due',evening,'ar','Mohamed Tamer').title,'مساء الخير يا Mohamed 🌙');
   assert.equal(checkInMessage(task,'due',morning,'en','').title,'Good morning ☀️');

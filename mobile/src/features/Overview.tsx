@@ -4,9 +4,10 @@ import type { Task } from '../../../shared/domain';
 import { dayKey, focusRemaining, taskSummary } from '../../../shared/productivity';
 import { setFocus, useStore, reportError } from '../data/store';
 import { Button, Card, Eyebrow, Icon, Label, styles, useText, useTheme } from '../app/ui';
+import { InstallCard } from './Install';
 const FOCUS = 25*60;
 export function Overview({ onAssistant, onVoice }: { onAssistant:()=>void; onVoice:()=>void }) {
-  const state = useStore(), t = useText(), c = useTheme(), [now,setNow] = useState(Date.now());
+  const state = useStore(), t = useText(), c = useTheme(), [now,setNow] = useState(Date.now()), [hideInstall,setHideInstall] = useState(false);
   useEffect(() => { if (!state.focusEnd) return; const timer = setInterval(() => setNow(Date.now()),1000); return () => clearInterval(timer); },[state.focusEnd]);
   const tasks = Object.values(state.records).filter(r => r.kind === 'task') as unknown as Task[];
   const summary = taskSummary(tasks), remaining = focusRemaining(state.focusEnd,now), hour = new Date().getHours();
@@ -19,6 +20,7 @@ export function Overview({ onAssistant, onVoice }: { onAssistant:()=>void; onVoi
     <View style={{ width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center',backgroundColor:primary ? 'rgba(255,255,255,0.18)' : c.accentSoft }}><Icon name={icon} size={20} color={primary ? c.onAccent : c.accent} width={2}/></View>
     <Text style={{ color:primary ? c.onAccent : c.ink,fontWeight:'700',fontSize:15 }}>{title}</Text></Pressable>;
   return <ScrollView contentContainerStyle={styles.content}>
+    {!hideInstall && <InstallCard onDismiss={() => setHideInstall(true)}/>}
     <View style={{ gap:4 }}><Eyebrow>{date}</Eyebrow><Label big>{greeting}</Label><Label>{t('Make room for what matters','وقت لما يهمك')}</Label></View>
     <View style={{ backgroundColor:c.hero,borderRadius:24,padding:20,gap:14 }}>
       <View style={[styles.row,{ justifyContent:'space-between' }]}><Eyebrow color={c.gold}>{t("TODAY'S PROGRESS",'تقدّم اليوم')}</Eyebrow><Text style={{ color:c.heroInk,fontWeight:'700',fontSize:15 }}>{Math.round(progress*100)}%</Text></View>

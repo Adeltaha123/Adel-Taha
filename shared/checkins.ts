@@ -3,9 +3,12 @@ import { dayKey, validDay } from './productivity.js';
 export const scheduleKey = (task:Task) => `${task.due ?? ''}T${task.time ?? ''}`;
 /** How long after the due time the follow-up asks whether the task was done. */
 export const FOLLOW_UP_MS = 60 * 60_000;
+/** A task with a date but no time is reminded about on the morning of its day and asked about in the evening. */
+export const DAY_REMINDER = '09:00', DAY_FOLLOW_UP = '20:00';
+const validTime = (time:string|null|undefined): time is string => !!time && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 export function checkInTime(task:Task):number|null {
-  if(task.done || !task.due || !validDay(task.due) || !task.time || !/^([01]\d|2[0-3]):[0-5]\d$/.test(task.time) || task.checkInDismissedFor === scheduleKey(task)) return null;
-  const due=new Date(`${task.due}T${task.time}:00`).getTime();
+  if(task.done || !task.due || !validDay(task.due) || (task.time && !validTime(task.time)) || task.checkInDismissedFor === scheduleKey(task)) return null;
+  const due=new Date(`${task.due}T${task.time || DAY_REMINDER}:00`).getTime();
   return Number.isFinite(due) ? Math.max(due,task.checkInAfter ?? 0) : null;
 }
 /** 'due' reminds at the task's time; 'followup' asks later whether it was done. A snoozed task only gets the follow-up. */
@@ -13,7 +16,9 @@ export type CheckInKind = 'due'|'followup';
 export function checkInsFor(task:Task):{kind:CheckInKind;at:number}[] {
   const at=checkInTime(task);
   if(at===null) return [];
-  return task.checkInAfter && at===task.checkInAfter ? [{kind:'followup',at}] : [{kind:'due',at},{kind:'followup',at:at+FOLLOW_UP_MS}];
+  if(task.checkInAfter && at===task.checkInAfter) return [{kind:'followup',at}];
+  const evening=new Date(`${task.due}T${DAY_FOLLOW_UP}:00`).getTime();
+  return [{kind:'due',at},{kind:'followup',at:task.time ? at+FOLLOW_UP_MS : Math.max(evening,at+FOLLOW_UP_MS)}];
 }
 export function upcomingCheckIns(tasks:Task[],now:number) {
   return tasks.flatMap(task=>checkInsFor(task).map(c=>({task,...c}))).filter(v=>v.at>now).sort((a,b)=>a.at-b.at).slice(0,60);
@@ -35,10 +40,15 @@ function greeting(at:number, language:Language, name:string) {
 }
 export function checkInMessage(task:Task, kind:CheckInKind, at:number, language:Language, name='') {
   const title=task.title.length>80?`${task.title.slice(0,79)}…`:task.title;
-  const body = kind==='due'
+  const allDay = !task.time;
+  const body = kind==='due' && allDay
+    ? language==='ar' ? `📋 النهاردة: «${title}»` : `📋 Today: “${title}”`
+    : kind==='due'
     ? language==='ar'
       ? pick(task,[`⏰ حان وقت «${title}»`,`⏰ ميعاد «${title}» دلوقتي`,`⏰ فاكر «${title}»؟ ده وقتها`])
       : pick(task,[`⏰ It's time for “${title}”`,`⏰ “${title}” is up now`,`⏰ Quick reminder: “${title}”`])
+    : allDay
+    ? language==='ar' ? `خلّصت «${title}» النهاردة؟ ✅` : `Did you get “${title}” done today? ✅`
     : language==='ar'
       ? pick(task,[`عدّت ساعة على «${title}»، خلّصتها؟ ✅`,`إيه أخبار «${title}»؟ خلصت؟`,`«${title}» تمّت؟ لو لسه أأجلها لك.`])
       : pick(task,[`An hour since “${title}”. Did you get it done? ✅`,`How did “${title}” go? All done?`,`Is “${title}” done? If not, I can move it.`]);

@@ -2,7 +2,7 @@ name: Publish web app
 on:
   push:
     branches: [main]
-    paths: ['deploy/github-pages/**', 'mobile/public/sw.js', '.github/workflows/pages.yml']
+    paths: ['deploy/github-pages/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
           mkdir site
           cp deploy/github-pages/index.html site/index.html
           cp deploy/github-pages/index.html site/404.html
-          cp mobile/public/sw.js site/sw.js
+          cp deploy/github-pages/sw.js site/sw.js
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
