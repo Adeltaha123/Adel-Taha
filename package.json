@@ -9,6 +9,7 @@
   "scripts": {
     "expo:dev": "node scripts/expo-dev.mjs",
     "server:online": "node scripts/server-online.mjs",
+    "server:address": "node scripts/server-address.mjs",
     "plan": "node --import tsx scripts/plan.ts",
     "expo:start": "npm --prefix mobile start",
     "expo:check": "npm --prefix mobile run typecheck",

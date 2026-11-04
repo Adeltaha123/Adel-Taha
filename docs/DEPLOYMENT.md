@@ -4,6 +4,8 @@ Run `npm ci`, `npm ci --prefix mobile`, and `npm run expo:dev` locally. Copy .en
 
 ## Shared backend
 
+For the 24/7 setup used by this project (Oracle Cloud Always Free, or any Ubuntu server), follow [SERVER.md](SERVER.md): `deploy/server/setup.sh` does everything below automatically.
+
 Use Node.js 22.15 or newer on a server with persistent disk:
 
 ```sh
