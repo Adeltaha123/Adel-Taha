@@ -77,6 +77,8 @@ export function buildApp(db: Db, options: ApiOptions = {}) {
 
   registerAssistant(app, userFor, limit, options.assistant, user => useAi(db, user.id));
   registerOAuth(app, db, { session, workspaceStatements, userFor, limit }, options.oauth);
+  // The API has no page of its own; someone opening its address in a browser lands on the app instead.
+  app.get('/', c => c.redirect('https://adeltaha123.github.io/Adel-Taha/', 302));
   app.get('/api/health', c => c.json({ ok: true }));
   app.get('/api/plan', async c => c.json(await planInfo(db, (await userFor(c)).id)));
 
