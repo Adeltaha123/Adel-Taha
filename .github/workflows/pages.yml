@@ -2,6 +2,7 @@ name: Publish web app
 on:
   push:
     branches: [main]
+    paths: ['deploy/github-pages/**', 'mobile/public/sw.js', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,23 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
       - uses: actions/configure-pages@v5
-      - run: npm ci --prefix mobile
-      # The website is the Expo app built for the browser. GitHub Pages serves it from /<repository>.
-      - run: npx expo export --platform web --output-dir dist
-        working-directory: mobile
-        env:
-          EXPO_BASE_URL: /${{ github.event.repository.name }}
-          # The 24/7 API on Cloudflare, built in so the site needs no address lookup (a repository variable can override it).
-          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'https://mypa-api.mohamed-tamer.workers.dev' }}
+      # The app now lives on Cloudflare (npm run deploy). This address only forwards there; sw.js clears the
+      # offline copy that browsers kept from older versions of this site.
+      - run: |
+          mkdir site
+          cp deploy/github-pages/index.html site/index.html
+          cp deploy/github-pages/index.html site/404.html
+          cp mobile/public/sw.js site/sw.js
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: mobile/dist
+          path: site
   deploy:
     needs: build
     runs-on: ubuntu-latest

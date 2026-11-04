@@ -2,7 +2,7 @@
 
 A local-first personal assistant for iPhone, Android, and the web, with English/Arabic and RTL support. One Expo (React Native) app in `mobile/` runs on phones and is built for the browser; one Node.js/TypeScript API in `server/` serves accounts, sync, and the AI assistant. No Python is required.
 
-Website: <https://adeltaha123.github.io/Adel-Taha/>
+App (website): <https://mypa-api.mohamed-tamer.workers.dev> — the old GitHub Pages address forwards there.
 
 ## Features
 

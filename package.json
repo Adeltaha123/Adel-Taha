@@ -9,7 +9,7 @@
   "scripts": {
     "expo:dev": "node scripts/expo-dev.mjs",
     "server:address": "node scripts/server-address.mjs",
-    "deploy:api": "node --env-file=.env node_modules/wrangler/bin/wrangler.js deploy",
+    "deploy": "node scripts/deploy.mjs",
     "plan": "node --import tsx scripts/plan.ts",
     "expo:start": "npm --prefix mobile start",
     "expo:check": "npm --prefix mobile run typecheck",

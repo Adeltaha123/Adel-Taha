@@ -1,9 +1,17 @@
-# The My PA API on Cloudflare Workers (free plan) with a D1 database. See docs/CLOUDFLARE.md.
+# My PA on Cloudflare Workers (free plan): the website and its API on one address, with a D1 database.
+# See docs/CLOUDFLARE.md. Deploy with `npm run deploy`, which builds the website first.
 name = "mypa-api"
 main = "server/worker.ts"
 account_id = "c7f3c1ecae843ecacbc4a1d1b38147a8"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
+
+# The website (the Expo web build) is served from the same origin as the API, so browsers make no cross-site
+# requests; Safari and content blockers can block those to *.workers.dev. Only /api/* runs the Worker code.
+[assets]
+directory = "./mobile/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [vars]
 API_ORIGINS = "https://adeltaha123.github.io,http://localhost:8081,http://127.0.0.1:8081"

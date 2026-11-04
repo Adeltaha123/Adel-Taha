@@ -4,7 +4,7 @@ Run `npm ci`, `npm ci --prefix mobile`, and `npm run expo:dev` locally. Copy .en
 
 ## Shared backend
 
-The live API runs on Cloudflare Workers with D1; see [CLOUDFLARE.md](CLOUDFLARE.md) for deploying (`npm run deploy:api`), secrets, limits, and backups.
+The live API runs on Cloudflare Workers with D1; see [CLOUDFLARE.md](CLOUDFLARE.md) for deploying (`npm run deploy`), secrets, limits, and backups.
 
 The same API also runs under Node.js 22.15 or newer, for development or on your own server with persistent disk:
 
