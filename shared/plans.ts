@@ -2,7 +2,7 @@
 export type Plan = 'free'|'personal'|'team';
 export type Role = 'owner'|'admin'|'member'|'viewer';
 export const PLANS = {
-  free:{ priceEgp:0, aiPerMonth:20 },
+  free:{ priceEgp:0, aiPerMonth:60 },
   personal:{ priceEgp:149, aiPerMonth:null },
   team:{ priceEgp:499, aiPerMonth:null, maxMembers:10 },
 } as const;

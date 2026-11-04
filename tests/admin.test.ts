@@ -20,7 +20,9 @@ test('the super admin sees accounts and OpenAI usage, controls plans, promo code
     // Not an admin yet: the panel's routes do not exist for this account.
     assert.equal((await call(boss.token, 'GET', '/api/admin/users')).statusCode, 404);
     await apiDatabase(api).run('UPDATE users SET is_admin=1 WHERE email=?', 'boss@example.test');
-    assert.equal((await call(boss.token, 'GET', '/api/plan')).json<PlanInfo>().isAdmin, true);
+    const bossPlan = (await call(boss.token, 'GET', '/api/plan')).json<PlanInfo>();
+    assert.deepEqual([bossPlan.isAdmin, bossPlan.aiLimit], [true, null]); // Super admins have no AI limit.
+    assert.equal((await call(user.token, 'GET', '/api/plan')).json<PlanInfo>().aiLimit, 60); // The Free allowance.
     assert.equal((await call(user.token, 'GET', '/api/admin/users')).statusCode, 404);
     assert.equal((await call(process.env.ADMIN_TOKEN, 'GET', '/api/admin/users')).statusCode, 200); // npm run plan's token.
 

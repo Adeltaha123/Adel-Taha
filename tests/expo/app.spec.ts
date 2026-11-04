@@ -143,7 +143,7 @@ test('Expo account sync isolates device records and imports explicitly',async ({
   await page.getByLabel('Password (10+ characters)',{ exact:true }).fill('long-password-123');
   await page.getByRole('button',{ name:'Create account',exact:true }).click();
   await expect(page.getByRole('button',{name:'Personal',exact:true})).toBeVisible();
-  await expect(page.getByText('AI and voice this month: 0 of 20',{exact:true})).toBeVisible(); // New accounts start on Free.
+  await expect(page.getByText('AI and voice this month: 0 of 60',{exact:true})).toBeVisible(); // New accounts start on Free.
   await expect(page.getByText('Creating a team needs the Team plan. You can still join a team with an invitation code.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Sync now',exact:true})).toHaveCount(0);
   await page.screenshot({ path:'mobile/.expo/preview-account-plan.png',fullPage:true });
@@ -334,4 +334,29 @@ test('the super admin panel lists accounts, creates a promo code, and the discou
   await page.getByRole('button',{name:'Apply code',exact:true}).click();
   await expect(page.getByText('349 EGP / month (was 499)',{exact:true})).toBeVisible();
   await expect(page.getByText(/^Promo code WELCOME30: 30% off the Team plan/)).toBeVisible();
+});
+test('typed quick-add text is understood like a voice note when signed in, and saved as written without an account',async({page})=>{
+  test.setTimeout(120000);
+  let sent='';
+  await page.route('**/api/assistant/status',route=>route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
+  await page.route('**/api/assistant/chat',route=>{ sent=route.request().postDataJSON().message; return route.fulfill({ json:{ reply:'I found 2 tasks.',actions:[
+    { type:'add_task',title:'Call Ahmed',due:'2026-11-05',time:'10:00',targetId:null,priority:1 },
+    { type:'add_task',title:'Send the offer',due:null,time:null,targetId:null,priority:2 }] } }); });
+  // Without an account there is no assistant: quick add saves the text as one task, as before.
+  await page.goto('/'); await page.getByRole('button',{name:'Continue offline',exact:true}).click();
+  await page.getByRole('button',{name:'Tasks',exact:true}).click();
+  await page.getByLabel('Quick add a task',{exact:true}).fill('Buy milk');
+  await page.getByRole('button',{name:'Add',exact:true}).click();
+  await expect(page.getByText('Buy milk',{exact:true})).toBeVisible();
+  // Signed in, the same box opens the review with the assistant's split.
+  await registerVoiceUser(page,'typed');
+  await page.getByRole('button',{name:'Tasks',exact:true}).click();
+  await page.getByLabel('Quick add a task',{exact:true}).fill('call ahmed tomorrow at 10 and send the offer');
+  await page.getByRole('button',{name:'Add',exact:true}).click();
+  await expect(page.getByText('Check them. Save them.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Save all 2 tasks',exact:true})).toBeVisible();
+  expect(sent).toBe('call ahmed tomorrow at 10 and send the offer');
+  await page.getByRole('button',{name:'Save all 2 tasks',exact:true}).click();
+  await expect(page.getByText('Call Ahmed',{exact:true})).toBeVisible();
+  await expect(page.getByText('Send the offer',{exact:true})).toBeVisible();
 });

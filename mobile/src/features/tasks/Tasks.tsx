@@ -16,7 +16,7 @@ const asDate = (key:string) => { const [y,m,d] = key.split('-').map(Number); ret
 const byPriority = (a:Task,b:Task) => Number(a.done)-Number(b.done) || (a.q||2)-(b.q||2) || (a.due||'9999').localeCompare(b.due||'9999') || (a.time||'99').localeCompare(b.time||'99') || (a.created||0)-(b.created||0);
 
 /* Task board modelled on the web app: day strip, Eisenhower matrix, and a plain list. */
-export function Tasks({ onVoice }: { onVoice:()=>void }) {
+export function Tasks({ onVoice, onAnalyze }: { onVoice:()=>void; onAnalyze:(text:string)=>void }) {
   const state = useStore(), t = useText(), c = useTheme(), today = dayKey(), ar = state.language === 'ar', locale = ar ? 'ar-EG' : 'en-GB';
   const [mode,setMode] = useState<'matrix'|'list'>('matrix'), [day,setDay] = useState('all'), [showDone,setShowDone] = useState(false), [quick,setQuick] = useState(''),
     [query,setQuery] = useState(''), [searching,setSearching] = useState(false), [expanded,setExpanded] = useState<Record<number,boolean>>({}), [editing,setEditing] = useState<Task|null>(null);
@@ -33,7 +33,9 @@ export function Tasks({ onVoice }: { onVoice:()=>void }) {
     return label + (x.time ? ` · ${x.time}` : '');
   };
   const newTask = (title='') => ({ id:randomUUID(),kind:'task' as const,title,q:2 as const,done:false,items:[],created:Date.now(),due:/^\d{4}-/.test(day) ? day : null,time:null });
-  function quickAdd() { const title = quick.trim(); if (!title) return; put(newTask(title.slice(0,500))); setQuick(''); }
+  // Signed in, typed text is understood like a voice note (split into tasks with dates, times and priorities) and
+  // reviewed before saving. Without an account there is no assistant, so it is saved as written.
+  function quickAdd() { const text = quick.trim(); if (!text) return; setQuick(''); if (state.session) onAnalyze(text.slice(0,4000)); else put(newTask(text.slice(0,500))); }
   const toggle = (x:Task) => put({ ...x,done:!x.done,doneAt:x.done ? null : Date.now() });
   const check = (x:Task,size=22) => <Pressable accessibilityRole="button" accessibilityLabel={x.done ? t('Reopen','إعادة فتح') : t('Complete','إنجاز')} onPress={() => toggle(x)} hitSlop={8} style={{ paddingTop:1 }}>
     <View style={{ width:size,height:size,borderWidth:2,borderColor:x.done ? c.accent : c.faint,borderRadius:size*0.3,backgroundColor:x.done ? c.accent : 'transparent',alignItems:'center',justifyContent:'center' }}>{x.done && <Icon name="check" size={size*0.62} color={c.onAccent} width={3}/>}</View></Pressable>;

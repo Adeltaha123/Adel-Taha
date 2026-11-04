@@ -9,7 +9,7 @@ App (website): <https://mypa-api.mohamed-tamer.workers.dev> — the old GitHub P
 - Today overview, tasks with search, priority matrix, checklists, schedules, assignment and undo; notes and habits.
 - 4-digit PIN lock, with optional unlock like the phone itself: Face ID, fingerprint, or the phone's own PIN. On the website the browser's Face ID / fingerprint login is used where available.
 - Accounts, automatic sync, offline edits, conflict resolution, and personal/team workspaces with single-use invitations.
-- Plans: Free (20 AI/voice requests a month), Personal (149 EGP/month, unlimited AI), and Team (499 EGP/month, up to 10 members with Owner, Admin, Member and Viewer roles; unlimited AI for every member). See [plans and roles](docs/PLANS.md).
+- Plans: Free (60 AI/voice requests a month), Personal (149 EGP/month, unlimited AI), and Team (499 EGP/month, up to 10 members with Owner, Admin, Member and Viewer roles; unlimited AI for every member). See [plans and roles](docs/PLANS.md).
 - Assistant: server-backed AI chat, voice transcription, speech playback, and reviewed task/note suggestions. See [setup and privacy](docs/ASSISTANT.md).
 - English/Arabic typed commands that work offline, and local task check-ins with snooze. See [reminders and saving](docs/TASK-CHECKINS.md).
 

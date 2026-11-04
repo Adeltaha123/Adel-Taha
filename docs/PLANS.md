@@ -6,7 +6,7 @@ Plans, prices, limits, and role rules are defined once in `shared/plans.ts`. The
 
 | Plan | Price | Includes |
 |---|---|---|
-| Free | 0 | Tasks, notes, habits, reminders, the app lock, and sync. 20 AI and voice requests per calendar month (UTC). |
+| Free | 0 | Tasks, notes, habits, reminders, the app lock, and sync. 60 AI and voice requests per calendar month (UTC), changeable in the super admin panel. Super admins have no limit. |
 | Personal | 149 EGP / month | Everything in Free with unlimited AI chat and voice transcription. |
 | Team | 499 EGP / month | Personal, plus creating teams of up to 10 members (including the owner) with roles and task assignment. Every member of a team whose owner has an active Team plan has unlimited AI. |
 

@@ -28,7 +28,7 @@ if (full) {
   await check('registering the same email again is refused', async () => { assert.equal((await call('/api/auth/register', { method: 'POST', body: { email, password, name: 'Smoke' } })).status, 409); });
   await check('login', async () => { const r = await call('/api/auth/login', { method: 'POST', body: { email, password } }); assert.equal(r.status, 200); token = r.json.token; });
   await check('workspaces', async () => { const r = await call('/api/workspaces', { token }); assert.equal(r.status, 200); workspace = r.json[0].id; assert.equal(r.json[0].personal, true); });
-  await check('plan starts on Free', async () => { const r = await call('/api/plan', { token }); assert.equal(r.json.plan, 'free'); assert.equal(r.json.aiLimit, 20); });
+  await check('plan starts on Free', async () => { const r = await call('/api/plan', { token }); assert.equal(r.json.plan, 'free'); assert.equal(r.json.aiLimit, 60); });
   await check('preferences save', async () => { const r = await call('/api/preferences', { method: 'POST', token, body: { language: 'ar' } }); assert.equal(r.json.language, 'ar'); });
   const task = { id: 'smoke_task', kind: 'task', title: 'Smoke task', q: 2, done: false, items: [] };
   await check('sync creates a record', async () => { const r = await call(`/api/workspaces/${workspace}/sync`, { method: 'POST', token, body: { mutations: [{ id: task.id, expectedVersion: 0, data: task }] } }); assert.equal(r.status, 200, JSON.stringify(r.json)); assert.equal(r.json.records[0].version, 1); });

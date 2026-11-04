@@ -22,7 +22,7 @@ type Tab = 'overview'|'tasks'|'assistant'|'library'|'account';
 const tabs:[Tab,keyof typeof icons,string,string][] = [['overview','overview','Today','اليوم'],['tasks','tasks','Tasks','المهام'],['assistant','assistant','Assistant','المساعد'],['library','library','Library','المكتبة'],['account','account','Account','الحساب']];
 export default function App() { return <SafeAreaProvider><Shell/></SafeAreaProvider>; }
 function Shell() {
-  const s = useStore(), lock = useLock(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false), [transferred,setTransferred] = useState(0);
+  const s = useStore(), lock = useLock(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false), [typed,setTyped] = useState(''), [transferred,setTransferred] = useState(0);
   useEffect(()=>{if(s.session)setGuest(false);},[s.session]);
   // Items handed over from the old website address are stored before the app reads its storage.
   useEffect(() => { void applyTransfer().then(added => { setTransferred(added); void initialize(); void initializeLock(); }); const interval = setInterval(() => { if (AppState.currentState === 'active') void sync().catch(() => {}); },30000);
@@ -46,12 +46,12 @@ function Shell() {
       {!!s.error && <View style={{ gap:8 }}><Notice tone="error">{s.error}</Notice><Button title={t('Dismiss','إغلاق')} secondary onPress={clearError}/></View>}</View>
     {inside && tab === 'library' && <View style={[styles.row,{ paddingHorizontal:20,paddingTop:4 }]}>{[['notes','Notes','ملاحظات'],['habits','Habits','عادات'],['commands','Commands','أوامر']].map(([id,en,ar]) => <Chip key={id} title={t(en!,ar!)} active={library === id} onPress={() => setLibrary(id!)}/>)}</View>}
     {inside && <CheckIns/>}
-    {!s.ready ? <View style={styles.content}><Label>{t('Loading saved data…','تحميل البيانات…')}</Label></View> : !inside ? <Login onGuest={() => setGuest(true)}/> : s.session && s.scope === 'guest' ? <Account/> : <View key={`${s.scope}:${s.session?.user.id ?? 'guest'}:${tab}:${library}`} style={{ flex:1 }}>{tab === 'overview' ? <Overview onAssistant={() => setTab('assistant')} onVoice={() => setVoice(true)}/> : tab === 'tasks' ? <Tasks onVoice={() => setVoice(true)}/> : tab === 'assistant' ? <Assistant/> : tab === 'library' ? library === 'commands' ? <Commands/> : <Collections kind={library === 'notes' ? 'note' : 'habit'}/> : <Account/>}</View>}
+    {!s.ready ? <View style={styles.content}><Label>{t('Loading saved data…','تحميل البيانات…')}</Label></View> : !inside ? <Login onGuest={() => setGuest(true)}/> : s.session && s.scope === 'guest' ? <Account/> : <View key={`${s.scope}:${s.session?.user.id ?? 'guest'}:${tab}:${library}`} style={{ flex:1 }}>{tab === 'overview' ? <Overview onAssistant={() => setTab('assistant')} onVoice={() => setVoice(true)}/> : tab === 'tasks' ? <Tasks onVoice={() => setVoice(true)} onAnalyze={text => { setTyped(text); setVoice(true); }}/> : tab === 'assistant' ? <Assistant/> : tab === 'library' ? library === 'commands' ? <Commands/> : <Collections kind={library === 'notes' ? 'note' : 'habit'}/> : <Account/>}</View>}
     {inside && <View style={{ flexDirection:'row',alignItems:'flex-end',borderTopWidth:1,borderColor:c.line,paddingTop:8,paddingBottom:6,backgroundColor:c.surface }}>
       {tabs.slice(0,2).map(tabButton)}
       <View style={{ flex:1,alignItems:'center' }}><Pressable accessibilityRole="button" accessibilityLabel={t('Say a task','قل مهمة')} onPress={() => setVoice(true)} style={({ pressed }) => ({ marginTop:-30,width:62,height:62,borderRadius:31,backgroundColor:c.accent,alignItems:'center',justifyContent:'center',borderWidth:4,borderColor:c.bg,opacity:pressed ? 0.85 : 1,shadowColor:'#000',shadowOpacity:0.18,shadowRadius:10,shadowOffset:{ width:0,height:4 },elevation:6 })}><Icon name="mic" size={26} color={c.onAccent} width={2.1}/></Pressable></View>
       {tabs.slice(2).map(tabButton)}</View>}
-    {voice && <VoiceTask close={() => setVoice(false)}/>}
+    {voice && <VoiceTask initialText={typed} close={() => { setVoice(false); setTyped(''); }}/>}
     {s.session && s.askName && <AssistantNamePrompt/>}
   </KeyboardAvoidingView>
     {lock.mode === 'loading' ? <View style={{ position:'absolute',top:0,bottom:0,left:0,right:0,zIndex:100,backgroundColor:c.bg }}/> : lock.mode !== 'open' && <Lock key={lock.mode}/>}</Page>;

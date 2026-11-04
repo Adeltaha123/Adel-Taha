@@ -12,12 +12,19 @@ import {SchedulePicker} from './SchedulePicker';
 import {QUADRANTS} from './quadrants';
 type Draft=AssistantAction&{key:string};
 const isArabic=(s:string)=>/[؀-ۿ]/.test(s);
-/* Say one task or many in one go; the assistant splits them and every proposal stays editable until saved. */
-export function VoiceTask({close}:{close:()=>void}) {
-  const s=useStore(),t=useText(),c=useTheme(),[reason,setReason]=useState<string|null|undefined>(undefined),[text,setText]=useState(''),[drafts,setDrafts]=useState<Draft[]>([]),[reply,setReply]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[voiceBusy,setVoiceBusy]=useState(false),[open,setOpen]=useState<string|null>(null),alive=useRef(true),saved=useRef(false),loaded=useRef(false),[restored,setRestored]=useState(false);
+/* Say one task or many in one go; the assistant splits them and every proposal stays editable until saved.
+   Typed text from quick add arrives as initialText and is understood the same way as a recording. */
+export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:string}) {
+  const s=useStore(),t=useText(),c=useTheme(),[reason,setReason]=useState<string|null|undefined>(undefined),[text,setText]=useState(''),[drafts,setDrafts]=useState<Draft[]>([]),[reply,setReply]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[voiceBusy,setVoiceBusy]=useState(false),[open,setOpen]=useState<string|null>(null),alive=useRef(true),saved=useRef(false),loaded=useRef(false),[restored,setRestored]=useState(false),[autoText,setAutoText]=useState('');
   useEffect(()=>{void voiceStatus(!!s.session,t).then(r=>{if(alive.current)setReason(r);});
-    void loadVoiceDraft().then(d=>{if(!alive.current)return;if(d){setText(d.text);setDrafts(d.drafts as Draft[]);setReply(d.reply);setRestored(true);}loaded.current=true;});
+    void loadVoiceDraft().then(d=>{if(!alive.current)return;
+      // Unsaved drafts from before are kept: typed text joins them instead of replacing them.
+      if(d){setText(initialText?`${d.text}\n${initialText}`.trim():d.text);setDrafts(d.drafts as Draft[]);setReply(d.reply);setRestored(true);if(initialText&&!d.drafts.length)setAutoText(`${d.text}\n${initialText}`.trim());}
+      else if(initialText){setText(initialText);setAutoText(initialText);}
+      loaded.current=true;});
     return()=>{alive.current=false;};},[]);
+  // Typed text is analysed as soon as the assistant is known to be available; otherwise it waits to be saved as written.
+  useEffect(()=>{if(autoText&&reason===null){const value=autoText;setAutoText('');void interpret(value);}},[autoText,reason]);
   // Unsaved text and drafts are kept on the device until they are saved or the user starts over.
   useEffect(()=>{if(loaded.current&&!saved.current)saveVoiceDraft({text,drafts,reply});},[text,drafts,reply]);
   const available=reason===null;
@@ -36,7 +43,7 @@ export function VoiceTask({close}:{close:()=>void}) {
     saveVoiceDraft(null);change(records);close(); // One change, so a single Undo removes the whole batch.
   }
   return <Modal visible animationType="slide" onRequestClose={close}><Page><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-    <View style={[styles.row,{justifyContent:'space-between',flexWrap:'nowrap'}]}><View style={{flex:1,gap:4}}><Eyebrow>{t('VOICE TASKS','مهام صوتية')}</Eyebrow><Label big>{t('Say it. Save it.','قلها، وسجّلها.')}</Label></View><IconButton icon="close" label={t('Close','إغلاق')} onPress={close}/></View>
+    <View style={[styles.row,{justifyContent:'space-between',flexWrap:'nowrap'}]}><View style={{flex:1,gap:4}}><Eyebrow>{initialText?t('NEW TASKS','مهام جديدة'):t('VOICE TASKS','مهام صوتية')}</Eyebrow><Label big>{initialText?t('Check them. Save them.','راجعها، وسجّلها.'):t('Say it. Save it.','قلها، وسجّلها.')}</Label></View><IconButton icon="close" label={t('Close','إغلاق')} onPress={close}/></View>
     <Label>{t('Say one task or ten in one go: "Call Ahmed tomorrow at 10, send the offer today, and follow up with Hala on Sunday."','قل مهمة واحدة أو عشرة مرة واحدة: «كلّم أحمد بكرة الساعة ١٠، وابعت العرض النهاردة، وتابع مع هالة يوم الحد».')}</Label>
     <Card>{reason===undefined?<ActivityIndicator color={c.accent}/>:<VoiceInput keepKey="tasks" available={available} unavailable={reason??undefined} onText={interpret} onBusyChange={setVoiceBusy}/>}</Card>
     {restored&&<Notice>{t('Your unsaved tasks from last time are back.','مهامك غير المحفوظة من المرة السابقة رجعت.')}</Notice>}

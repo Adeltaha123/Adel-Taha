@@ -34,7 +34,8 @@ export async function planInfo(db:Db, userId:string, now = Date.now()):Promise<P
   const coveredByTeam = own.active ? null : await coveringTeam(db,userId,now);
   const used = await db.get<{ count:number }>('SELECT count FROM ai_usage WHERE user_id=? AND month=?', userId, monthKey(new Date(now)));
   const promo = user?.promo_code ? await db.get<PromoRow>('SELECT * FROM promo_codes WHERE code=?', user.promo_code) : undefined;
-  return { ...own, aiUsed:used?.count ?? 0, aiLimit:own.active || coveredByTeam ? null : settings.freeAiPerMonth, coveredByTeam, contact:settings.contact,
+  // Paid plans, members of a paid team, and super admins have no monthly AI limit.
+  return { ...own, aiUsed:used?.count ?? 0, aiLimit:own.active || coveredByTeam || user?.is_admin ? null : settings.freeAiPerMonth, coveredByTeam, contact:settings.contact,
     prices:{ personal:settings.personalPrice, team:settings.teamPrice },
     promo:usable(promo,now) ? { code:promo!.code, plan:promo!.plan, percent:promo!.percent } : null,
     isAdmin:Boolean(user?.is_admin) };
