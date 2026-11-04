@@ -88,8 +88,8 @@ function apiOrigin() {
 }
 const fixedOrigin = apiOrigin();
 export let origin = fixedOrigin;
-// Without a fixed address (the published website), use the address the owner's PC published with
-// npm run server:online. Its free tunnel address changes on every start, so it is looked up again after a failure.
+// Without a fixed address (the published website), use the server address saved with npm run server:address,
+// so moving the API needs no new website build. It is looked up again after a failed request.
 const SERVER_ADDRESS = 'https://raw.githubusercontent.com/Adeltaha123/Adel-Taha/server-address/server.json';
 let lookup:Promise<string>|null = null;
 async function currentOrigin() {
@@ -103,7 +103,7 @@ async function currentOrigin() {
   return found;
 }
 const ar = () => state.language === 'ar';
-const offline = () => new Error(ar() ? 'خادم My PA غير متصل الآن. شغّله على الكمبيوتر بالأمر npm run server:online، أو تابع دون حساب.' : 'The My PA server is offline right now. Start it on your PC with npm run server:online, or continue offline.');
+const offline = () => new Error(ar() ? 'تعذّر الوصول إلى خادم My PA. تأكد من اتصالك بالإنترنت وحاول مرة أخرى، أو تابع دون حساب.' : "Can't reach the My PA server. Check your internet connection and try again, or continue offline.");
 type Send = (url:string, headers:Record<string,string>, signal:AbortSignal) => Promise<{ status:number; text:string }>;
 /** One API call: finds the server, adds the session, enforces the timeout, and turns failures into readable errors. */
 async function call<T>(path:string, send:Send, timeout:number, signal?:AbortSignal):Promise<T> {

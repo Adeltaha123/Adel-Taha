@@ -25,11 +25,9 @@ npm run expo:dev
 
 This starts the API and Expo together. Scan the QR code with Expo Go (SDK 58), or press `w` in the Expo terminal to open the web version. See [phone setup](docs/EXPO.md) for the API address, network setup, and testing.
 
-Accounts, sync, and the assistant need the API reachable from the internet. Run it 24/7 on a free Oracle Cloud server with one setup script: see [24/7 server](docs/SERVER.md). The app finds the server through `server.json` on the `server-address` branch, set with `npm run server:address -- https://…`.
+The API runs 24/7 on Cloudflare Workers' free plan with a D1 database, at <https://mypa-api.mohamed-tamer.workers.dev>. See [Cloudflare](docs/CLOUDFLARE.md) for deploying, secrets, and limits. The website finds the API through `server.json` on the `server-address` branch (`npm run server:address`); phones use `EXPO_PUBLIC_API_URL` in `mobile/.env`.
 
-As a stopgap, `npm run server:online` runs the API on your PC behind a temporary Cloudflare tunnel while the window stays open. It will not replace a saved 24/7 server unless you add `-- --force`.
-
-To turn on a subscription after someone pays (run on the PC with the database):
+To turn on a subscription after someone pays (changes the live server; `ADMIN_TOKEN` in `.env` must match the server's):
 
 ```sh
 npm run plan                                  # list accounts and plans

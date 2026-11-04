@@ -8,8 +8,8 @@
   },
   "scripts": {
     "expo:dev": "node scripts/expo-dev.mjs",
-    "server:online": "node scripts/server-online.mjs",
     "server:address": "node scripts/server-address.mjs",
+    "deploy:api": "node --env-file=.env node_modules/wrangler/bin/wrangler.js deploy",
     "plan": "node --import tsx scripts/plan.ts",
     "expo:start": "npm --prefix mobile start",
     "expo:check": "npm --prefix mobile run typecheck",
@@ -31,7 +31,6 @@
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^22.0.0",
-    "cloudflared": "^0.7.3",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "wrangler": "^4.157.0"

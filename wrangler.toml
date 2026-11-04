@@ -1,6 +1,7 @@
 # The My PA API on Cloudflare Workers (free plan) with a D1 database. See docs/CLOUDFLARE.md.
 name = "mypa-api"
 main = "server/worker.ts"
+account_id = "c7f3c1ecae843ecacbc4a1d1b38147a8"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -17,7 +18,7 @@ SUBSCRIBE_CONTACT = ""
 [[d1_databases]]
 binding = "DB"
 database_name = "mypa"
-database_id = "00000000-0000-0000-0000-000000000000" # replaced by the real ID when the database is created
+database_id = "2dab885a-0fbd-42bd-ac85-dd8b8a7c6076"
 
 [observability]
 enabled = true

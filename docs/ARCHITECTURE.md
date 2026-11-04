@@ -20,11 +20,11 @@ The Assistant uses authenticated routes in `server/assistant.ts`. The server cal
 
 Signing in selects the personal workspace and restores cached account scopes. Edits queue a debounced sync; offline records are retained. Conversation records store bounded text history per user within the current workspace; team membership also grants access to them. `shared/checkins.ts` plans local task check-ins and the notification adapter schedules them.
 
-Passwords use salted scrypt hashes. Random sessions and invitation codes are stored as hashes. Sessions last 30 days and renew (at most daily) while used; invitations last seven days and are single use. Membership checks isolate workspaces. Authentication endpoints are rate limited.
+Passwords use PBKDF2-SHA256 with a per-hash iteration count (10,000 on Cloudflare's free plan, 210,000 under Node); older scrypt hashes still verify and are upgraded at the next login. Random sessions and invitation codes are stored as hashes. Sessions last 30 days and renew (at most daily) while used; invitations last seven days and are single use. Membership checks isolate workspaces. Authentication endpoints are rate limited.
 
 Mutations carry expected record versions. Stale edits return conflicts instead of overwriting data. Tombstones preserve deletions; identical retries are idempotent. Device records are imported into a workspace only when the user chooses to.
 
-SQLite uses WAL and foreign keys. Deploy one API instance with persistent local storage. Node 22.15 emits an experimental warning for built-in SQLite.
+The API (Hono) runs on Cloudflare Workers with D1 in production and on Node with `node:sqlite` in development and tests, through one async `Db` interface in `server/db.ts`. D1 has no interactive transactions, so related writes go through atomic batches and sync writes only apply if the stored version is unchanged. See CLOUDFLARE.md.
 
 ## Website
 

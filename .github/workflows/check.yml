@@ -1,7 +1,7 @@
 name: Check application
 on:
   push:
-    # server-address only holds the address published by npm run server:address / server:online.
+    # server-address only holds the API address saved by npm run server:address.
     branches-ignore: [server-address]
   pull_request:
 permissions:
