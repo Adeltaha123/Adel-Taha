@@ -61,6 +61,12 @@ const TABLES = [
   'CREATE TABLE IF NOT EXISTS ai_usage (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, month TEXT NOT NULL, count INTEGER NOT NULL, PRIMARY KEY(user_id,month))',
   'CREATE TABLE IF NOT EXISTS oauth_identities (provider TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), PRIMARY KEY(provider,subject))',
   'CREATE TABLE IF NOT EXISTS oauth_flows (id TEXT PRIMARY KEY, provider TEXT NOT NULL, poll_hash TEXT NOT NULL, state_hash TEXT UNIQUE NOT NULL, nonce TEXT NOT NULL, verifier TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, user_id TEXT, link_user TEXT, handoff_hash TEXT, return_url TEXT)',
+  // One row per successful AI or voice request, with OpenAI's token counts, for the admin panel's usage and cost.
+  'CREATE TABLE IF NOT EXISTS ai_events (user_id TEXT NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, model TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0, output_tokens INTEGER NOT NULL DEFAULT 0, audio_seconds REAL NOT NULL DEFAULT 0)',
+  'CREATE INDEX IF NOT EXISTS ai_events_at ON ai_events(at)',
+  'CREATE INDEX IF NOT EXISTS ai_events_user ON ai_events(user_id, at)',
+  'CREATE TABLE IF NOT EXISTS promo_codes (code TEXT PRIMARY KEY, plan TEXT NOT NULL, percent INTEGER NOT NULL, max_uses INTEGER, uses INTEGER NOT NULL DEFAULT 0, expires INTEGER, active INTEGER NOT NULL DEFAULT 1, created INTEGER NOT NULL, note TEXT NOT NULL DEFAULT \'\')',
+  'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
 ];
 // Columns added after the first release; existing databases gain them in place.
 const COLUMNS: [table: string, column: string, definition: string][] = [
@@ -70,6 +76,11 @@ const COLUMNS: [table: string, column: string, definition: string][] = [
   ['invitations', 'role', "TEXT NOT NULL DEFAULT 'member'"],
   ['oauth_flows', 'handoff_hash', 'TEXT'],
   ['oauth_flows', 'return_url', 'TEXT'],
+  ['users', 'created', 'INTEGER'], // NULL for accounts made before it was recorded.
+  ['users', 'last_seen', 'INTEGER'],
+  ['users', 'disabled', 'INTEGER NOT NULL DEFAULT 0'],
+  ['users', 'is_admin', 'INTEGER NOT NULL DEFAULT 0'],
+  ['users', 'promo_code', 'TEXT'], // The code the user entered, shown to the admin when activating a plan.
 ];
 /** Creates or upgrades the schema; safe to run on every start. */
 export async function migrate(db: Db) {

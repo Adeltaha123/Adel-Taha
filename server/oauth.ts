@@ -118,7 +118,7 @@ export function registerOAuth(app:Hono,db:Db,hooks:Hooks,options:OAuthOptions={}
           if(await db.get('SELECT id FROM users WHERE email=?',identity.email))throw new Error('Sign in with email and link this provider from Account');
           userId=randomUUID();
           // Social accounts get a random hash no password produces; they sign in through the provider.
-          writes.push(['INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)',userId,identity.email,identity.name,`pbkdf2$1$${randomBytes(16).toString('hex')}$${randomBytes(32).toString('hex')}`],...hooks.workspaceStatements(userId,'Personal',true).statements);
+          writes.push(['INSERT INTO users (id,email,name,password,created) VALUES (?,?,?,?,?)',userId,identity.email,identity.name,`pbkdf2$1$${randomBytes(16).toString('hex')}${randomBytes(32).toString('hex')}`,now()],...hooks.workspaceStatements(userId,'Personal',true).statements);
         }
         writes.push(['INSERT INTO oauth_identities VALUES (?,?,?)',p,identity.sub,userId]);
       }

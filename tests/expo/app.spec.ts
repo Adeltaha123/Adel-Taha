@@ -305,3 +305,33 @@ test('opening the old address carries this device\'s old items and PIN to the ne
   await expect(page.getByText('Old offline note',{exact:true})).toBeVisible();
   await expect(page.getByText('Old voice transcript',{exact:true})).toBeVisible();
 });
+test('the super admin panel lists accounts, creates a promo code, and the discount reaches the user',async({page})=>{
+  test.setTimeout(120000);
+  const email=`boss-${Date.now()}@example.test`, admin={ Authorization:'Bearer expo-test-admin-token-0123456789abcdef' };
+  await registerVoiceUser(page,'boss');
+  await expect(page.getByRole('button',{name:'Super admin panel',exact:true})).toHaveCount(0); // Ordinary accounts do not see it.
+  // Make this account a super admin with the server's admin token, as the owner would once.
+  const me=(await page.request.get('http://127.0.0.1:3012/api/admin/users?q=boss-',{ headers:admin })).json();
+  const id=(await me).sort((a:{created:number},b:{created:number})=>b.created-a.created)[0].id;
+  expect((await page.request.post(`http://127.0.0.1:3012/api/admin/users/${id}`,{ headers:admin, data:{ isAdmin:true } })).ok()).toBe(true);
+  await page.reload();
+  await page.getByRole('button',{name:'Account',exact:true}).click();
+  await page.getByRole('button',{name:'Super admin panel',exact:true}).click();
+  await expect(page.getByText('Accounts',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Users',exact:true}).click();
+  await expect(page.getByText(/^boss-\d+@example\.test$/).first()).toBeVisible();
+  await expect(page.getByText(/AI requests/).first()).toBeVisible();
+  await page.getByRole('button',{name:'Promo codes',exact:true}).click();
+  await page.getByLabel('Code (letters and digits, e.g. RAMADAN25)',{exact:true}).fill('WELCOME30');
+  await page.getByRole('button',{name:'Team',exact:true}).click();
+  await page.getByLabel('Discount %',{exact:true}).fill('30');
+  await page.getByRole('button',{name:'Create code',exact:true}).click();
+  await expect(page.getByText('30% off Team',{exact:true})).toBeVisible();
+  await page.screenshot({ path:'mobile/.expo/preview-admin.png',fullPage:true });
+  await page.getByRole('button',{name:'Close',exact:true}).first().click();
+  // The code on the Account screen: Team's 499 becomes 349.
+  await page.getByLabel('Have a promo code?',{exact:true}).fill('welcome30');
+  await page.getByRole('button',{name:'Apply code',exact:true}).click();
+  await expect(page.getByText('349 EGP / month (was 499)',{exact:true})).toBeVisible();
+  await expect(page.getByText(/^Promo code WELCOME30: 30% off the Team plan/)).toBeVisible();
+});

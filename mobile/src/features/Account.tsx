@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import type { Workspace } from '../../../shared/api';
-import { PLANS, TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, type Role } from '../../../shared/plans';
-import { api, authenticate, conflictVersions, importGuest, invite, leaveTeam, myRole, pendingGuestRecords, refresh, removeMember, reportError, resolve, selectWorkspace, setMemberRole, signOut, useStore } from '../data/store';
+import { PLANS, TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, discountedPrice, type Role } from '../../../shared/plans';
+import { api, authenticate, conflictVersions, importGuest, invite, leaveTeam, myRole, pendingGuestRecords, redeemPromo, refresh, removeMember, reportError, resolve, selectWorkspace, setMemberRole, signOut, useStore } from '../data/store';
 import { Button, Card, Chip, Eyebrow, Field, Label, Notice, styles, useText, useTheme } from '../app/ui';
 import { SocialSignIn } from './SocialSignIn';
+import { Admin } from './Admin';
 import { AssistantNameField } from './AssistantName';
 import { setAssistantName } from '../data/store';
 import { cleanAssistantName } from '../../../shared/assistant';
@@ -17,7 +18,7 @@ const roleHelp = (role:Role, t:T) => role === 'owner' ? t('Manages the plan, mem
   : role === 'member' ? t('Adds tasks and edits their own and the ones assigned to them.','يضيف مهام ويعدّل مهامه والمهام المسندة إليه.')
   : t('Sees the team’s tasks but cannot change them.','يرى مهام الفريق ولا يستطيع تعديلها.');
 export function Account() {
-  const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[assistant,setAssistant] = useState(s.assistantName);
+  const s = useStore(),t = useText(),[register,setRegister] = useState(false),[email,setEmail] = useState(''),[password,setPassword] = useState(''),[name,setName] = useState(''),[working,setWorking] = useState(false),[linked,setLinked] = useState(''),[admin,setAdmin] = useState(false),[assistant,setAssistant] = useState(s.assistantName);
   const busy = working || s.busy;
   const run:Run = fn => { if (busy) return; setWorking(true); void fn().catch(reportError).finally(() => setWorking(false)); };
   const active = s.workspaces.find(w => s.scope.endsWith(`:${w.id}`));
@@ -35,7 +36,9 @@ export function Account() {
   const pending = pendingGuestRecords();
   return <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <View style={{ gap:2 }}><Label big>{s.session.user.name}</Label><Label small>{s.session.user.email}</Label></View>
-    <PlanCard/>
+    <PlanCard run={run} busy={busy}/>
+    {s.plan?.isAdmin && <Button title={t('Super admin panel','لوحة المشرف العام')} icon="account" onPress={() => setAdmin(true)}/>}
+    {admin && <Admin close={() => setAdmin(false)}/>}
     <View style={{ gap:8 }}><Eyebrow>{t('WORKSPACES','المساحات')}</Eyebrow>
       <View style={styles.row}>{s.workspaces.map(w => <Chip key={w.id} title={w.personal ? t('Personal','شخصي') : w.name} active={active?.id === w.id} onPress={() => { if (active?.id !== w.id) run(() => selectWorkspace(w.id)); }}/>)}</View></View>
     {active && !active.personal && <TeamCard team={active} busy={busy} run={run}/>}
@@ -49,16 +52,23 @@ export function Account() {
   </ScrollView>;
 }
 
-function PlanCard() {
-  const s = useStore(), t = useText(), c = useTheme(), plan = s.plan;
+function PlanCard({ run, busy }:{ run:Run; busy:boolean }) {
+  const s = useStore(), t = useText(), c = useTheme(), plan = s.plan, [code,setCode] = useState('');
   if (!plan) return null;
   const until = plan.until ? new Date(plan.until).toLocaleDateString(s.language === 'ar' ? 'ar-EG' : 'en-GB',{ day:'numeric', month:'long' }) : '';
   const current = !plan.active ? t('Free','مجانية') : plan.plan === 'team' ? t('Team','الفريق') : t('Personal','الشخصية');
+  const free = plan.aiLimit ?? PLANS.free.aiPerMonth;
+  /** The monthly price, with the promo code's discount when it applies to this plan. */
+  const price = (which:'personal'|'team') => {
+    const full = plan.prices[which], now = discountedPrice(full,which,plan.promo);
+    return now === full ? t(`${full} EGP / month`,`${full} جنيه / شهر`) : t(`${now} EGP / month (was ${full})`,`${now} جنيه / شهر (بدلاً من ${full})`);
+  };
   const rows:[string,string,string,boolean][] = [
-    [t('Free','مجانية'),t('0 EGP','٠ جنيه'),t(`Tasks, notes, habits, reminders and sync. ${PLANS.free.aiPerMonth} AI and voice requests a month.`,`المهام والملاحظات والعادات والتذكيرات والمزامنة. ${PLANS.free.aiPerMonth} طلب ذكاء اصطناعي وصوت شهرياً.`),!plan.active],
-    [t('Personal','الشخصية'),t(`${PLANS.personal.priceEgp} EGP / month`,`${PLANS.personal.priceEgp} جنيه / شهر`),t('Everything in Free, with unlimited AI assistant and voice tasks.','كل ما في المجانية، مع مساعد ذكي ومهام صوتية بلا حدود.'),plan.active && plan.plan === 'personal'],
-    [t('Team','الفريق'),t(`${PLANS.team.priceEgp} EGP / month`,`${PLANS.team.priceEgp} جنيه / شهر`),t(`Teams of up to ${TEAM_MAX_MEMBERS} people with roles and task assignment. Unlimited AI for every member.`,`فرق حتى ${TEAM_MAX_MEMBERS} أشخاص بأدوار وإسناد مهام. ذكاء اصطناعي بلا حدود لكل عضو.`),plan.active && plan.plan === 'team'],
+    [t('Free','مجانية'),t('0 EGP','٠ جنيه'),t(`Tasks, notes, habits, reminders and sync. ${free} AI and voice requests a month.`,`المهام والملاحظات والعادات والتذكيرات والمزامنة. ${free} طلب ذكاء اصطناعي وصوت شهرياً.`),!plan.active],
+    [t('Personal','الشخصية'),price('personal'),t('Everything in Free, with unlimited AI assistant and voice tasks.','كل ما في المجانية، مع مساعد ذكي ومهام صوتية بلا حدود.'),plan.active && plan.plan === 'personal'],
+    [t('Team','الفريق'),price('team'),t(`Teams of up to ${TEAM_MAX_MEMBERS} people with roles and task assignment. Unlimited AI for every member.`,`فرق حتى ${TEAM_MAX_MEMBERS} أشخاص بأدوار وإسناد مهام. ذكاء اصطناعي بلا حدود لكل عضو.`),plan.active && plan.plan === 'team'],
   ];
+  const promoPlan = plan.promo?.plan === 'team' ? t('the Team plan','باقة الفريق') : plan.promo?.plan === 'personal' ? t('the Personal plan','الباقة الشخصية') : t('any plan','أي باقة');
   return <Card><Eyebrow>{t('YOUR PLAN','باقتك')}</Eyebrow>
     <Label big>{current}{plan.active && until ? t(` · until ${until}`,` · حتى ${until}`) : ''}</Label>
     {plan.aiLimit !== null ? <View style={{ gap:6 }}><Label small>{t(`AI and voice this month: ${plan.aiUsed} of ${plan.aiLimit}`,`الذكاء الاصطناعي والصوت هذا الشهر: ${plan.aiUsed} من ${plan.aiLimit}`)}</Label>
@@ -66,6 +76,9 @@ function PlanCard() {
       : <Label small>{plan.coveredByTeam ? t(`Unlimited AI through the ${plan.coveredByTeam} team.`,`ذكاء اصطناعي بلا حدود عن طريق فريق ${plan.coveredByTeam}.`) : t('Unlimited AI and voice.','ذكاء اصطناعي وصوت بلا حدود.')}</Label>}
     {rows.map(([name,price,about,on]) => <View key={name} style={{ borderWidth:1, borderColor:on ? c.accent : c.line, backgroundColor:on ? c.accentSoft : 'transparent', borderRadius:14, padding:12, gap:4 }}>
       <View style={[styles.row,{ justifyContent:'space-between' }]}><Label strong>{name}{on ? t(' · current',' · الحالية') : ''}</Label><Label strong>{price}</Label></View><Label small>{about}</Label></View>)}
+    {plan.promo ? <Notice>{t(`Promo code ${plan.promo.code}: ${plan.promo.percent}% off ${promoPlan}. Mention it when you pay.`,`كود الخصم ${plan.promo.code}: خصم ${plan.promo.percent}٪ على ${promoPlan}. اذكره عند الدفع.`)}</Notice>
+      : <View style={{ gap:8 }}><Field label={t('Have a promo code?','عندك كود خصم؟')} value={code} onChangeText={setCode} autoCapitalize="characters" maxLength={40}/>
+        <Button title={t('Apply code','تطبيق الكود')} secondary disabled={busy || !code.trim()} onPress={() => run(async () => { await redeemPromo(code); setCode(''); })}/></View>}
     <Label small>{plan.contact
       ? t(`To subscribe or renew, contact ${plan.contact} with your email (${s.session?.user.email}). Your plan turns on as soon as payment is confirmed.`,`للاشتراك أو التجديد، تواصل مع ${plan.contact} وأرسل بريدك (${s.session?.user.email}). تتفعّل باقتك فور تأكيد الدفع.`)
       : t(`To subscribe or renew, contact the app owner with your email (${s.session?.user.email}). Your plan turns on as soon as payment is confirmed.`,`للاشتراك أو التجديد، تواصل مع صاحب التطبيق وأرسل بريدك (${s.session?.user.email}). تتفعّل باقتك فور تأكيد الدفع.`)}</Label>

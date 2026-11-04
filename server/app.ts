@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { migrate, type Db, type Statement } from './db.js';
 import { recordSchema } from './records.js';
@@ -12,7 +12,8 @@ import { HttpError, body, errorResponse, rateLimiter } from './http.js';
 import { dummyCheck, hashPassword, needsRehash, verifyPassword } from './passwords.js';
 import { ASSISTANT_NAME } from '../shared/assistant.js';
 import { TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, canWrite, type Role } from '../shared/plans.js';
-import { listPlans, planInfo, requireTeamPlan, setPlan, useAi } from './plans.js';
+import { planInfo, redeemPromo, requireTeamPlan, useAi } from './plans.js';
+import { registerAdmin } from './admin.js';
 import type { CloudRecord, User, Workspace } from '../shared/api.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -25,6 +26,7 @@ const syncSchema = z.object({ mutations: z.array(z.object({
 })).max(100) });
 const roleSchema = z.enum(['admin', 'member', 'viewer']);
 const DAY_MS = 24 * 3600_000, SESSION_MS = 30 * DAY_MS;
+const disabled = () => new HttpError(403, 'This account has been disabled. Contact the app owner.');
 const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
 
 export interface ApiOptions { origins?: string[]; rateLimit?: boolean; assistant?: AssistantOptions; oauth?: OAuthOptions }
@@ -46,10 +48,13 @@ export function buildApp(db: Db, options: ApiOptions = {}) {
     const token = c.req.header('authorization')?.match(/^Bearer ([a-zA-Z0-9_-]{43})$/)?.[1];
     if (!token) throw new HttpError(401, 'Sign in to continue.');
     const now = Date.now();
-    const row = await db.get<User & { expires: number }>('SELECT u.id,u.email,u.name,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?', hash(token), now);
+    const row = await db.get<User & { expires: number; disabled: number; last_seen: number | null }>('SELECT u.id,u.email,u.name,u.disabled,u.last_seen,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?', hash(token), now);
     if (!row) throw new HttpError(401, 'Your session expired. Sign in again.');
+    if (row.disabled) throw disabled();
     // Sliding expiry: a session in use is renewed (at most daily), so people sign in once per device.
     if (row.expires - now < SESSION_MS - DAY_MS) await db.run('UPDATE sessions SET expires=? WHERE hash=?', now + SESSION_MS, hash(token));
+    // "Last active" for the admin panel, written at most hourly to keep database writes low.
+    if (!row.last_seen || now - row.last_seen > 3600_000) await db.run('UPDATE users SET last_seen=? WHERE id=?', now, row.id);
     return { id: row.id, email: row.email, name: row.name };
   }
   async function workspaceFor(c: Context): Promise<{ user: User; workspace: Workspace; role: Role }> {
@@ -79,6 +84,11 @@ export function buildApp(db: Db, options: ApiOptions = {}) {
   registerOAuth(app, db, { session, workspaceStatements, userFor, limit }, options.oauth);
   app.get('/api/health', c => c.json({ ok: true }));
   app.get('/api/plan', async c => c.json(await planInfo(db, (await userFor(c)).id)));
+  app.post('/api/plan/promo', limit('promo', 10), async c => {
+    const user = await userFor(c), { code } = await body(c, z.object({ code: z.string().trim().min(1).max(40) }));
+    await redeemPromo(db, user.id, code);
+    return c.json(await planInfo(db, user.id));
+  });
 
   // Per-user settings (not per workspace), so they follow the person to every device and are never shared with a team.
   const preferences = z.object({ language: z.enum(['en', 'ar']).optional(), theme: z.enum(['system', 'light', 'dark']).optional(), assistantName: z.string().trim().regex(ASSISTANT_NAME).optional() }).strict();
@@ -101,16 +111,17 @@ export function buildApp(db: Db, options: ApiOptions = {}) {
     const user = { id: randomUUID(), name: input.name, email: input.email };
     const personal = workspaceStatements(user.id, 'Personal', true);
     // The email column is unique, so a registration racing this one fails here instead of creating a second account.
-    try { await db.batch([['INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)', user.id, user.email, user.name, await hashPassword(input.password)], ...personal.statements]); }
+    try { await db.batch([['INSERT INTO users (id,email,name,password,created) VALUES (?,?,?,?,?)', user.id, user.email, user.name, await hashPassword(input.password), Date.now()], ...personal.statements]); }
     catch (error) { if (/UNIQUE/i.test(String(error))) throw taken(); throw error; }
     return c.json(await session(user), 201);
   });
   app.post('/api/auth/login', limit('auth', 10), async c => {
     const input = await body(c, credentials);
-    const row = await db.get<{ id: string; name: string; email: string; password: string }>('SELECT id,name,email,password FROM users WHERE email=?', input.email);
+    const row = await db.get<{ id: string; name: string; email: string; password: string; disabled: number }>('SELECT id,name,email,password,disabled FROM users WHERE email=?', input.email);
     const wrong = () => new HttpError(401, 'Email or password is incorrect.');
     if (!row) { await dummyCheck(input.password); throw wrong(); }
     if (!await verifyPassword(input.password, row.password)) throw wrong();
+    if (row.disabled) throw disabled();
     if (needsRehash(row.password)) await db.run('UPDATE users SET password=? WHERE id=?', await hashPassword(input.password), row.id);
     return c.json(await session({ id: row.id, name: row.name, email: row.email }));
   });
@@ -227,16 +238,6 @@ export function buildApp(db: Db, options: ApiOptions = {}) {
     return c.json({ records, conflicts, rejected });
   });
 
-  // Owner-only maintenance for npm run plan, enabled by setting ADMIN_TOKEN on the server.
-  function requireAdmin(c: Context) {
-    const expected = process.env.ADMIN_TOKEN ?? '', given = c.req.header('authorization')?.replace(/^Bearer /, '') ?? '';
-    if (expected.length < 32 || !timingSafeEqual(Buffer.from(hash(given)), Buffer.from(hash(expected)))) throw new HttpError(404, 'Not found.');
-  }
-  app.get('/api/admin/plans', limit('admin', 30), async c => { requireAdmin(c); return c.json(await listPlans(db)); });
-  app.post('/api/admin/plans', limit('admin', 30), async c => {
-    requireAdmin(c);
-    const input = await body(c, z.object({ email: z.string().email(), plan: z.enum(['free', 'personal', 'team']), months: z.number().int().min(1).max(36).default(1) }));
-    return c.json(await setPlan(db, input.email, input.plan, input.months));
-  });
+  registerAdmin(app, db, { userFor, limit });
   return app;
 }

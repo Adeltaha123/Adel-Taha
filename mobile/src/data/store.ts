@@ -168,11 +168,15 @@ export const providers = () => api<Record<SocialProvider,{ enabled:boolean }>>('
 export async function refresh() { const workspaces = await api<Workspace[]>('/workspaces'); patch({ workspaces }); void loadPlan(); }
 /** The account's plan and this month's AI use; refreshed after sign-in, on the Account screen, and after AI requests. */
 export async function loadPlan() { if (state.session) patch({ plan:await api<PlanInfo>('/plan').catch(() => state.plan) }); }
+/** Applies a promo code to this account; the discounted price then shows on the plans. */
+export async function redeemPromo(code:string) { patch({ plan:await api<PlanInfo>('/plan/promo',{ code }) }); }
 function planMessage(code:unknown) {
   const ar = state.language === 'ar';
   if (code === 'ai_limit') { void loadPlan(); return ar ? 'استخدمت كل طلبات الذكاء الاصطناعي والصوت المجانية لهذا الشهر. اشترك في الباقة الشخصية لاستخدام غير محدود.' : "You have used this month's free AI and voice requests. Subscribe to Personal for unlimited use."; }
   if (code === 'team_plan') return ar ? 'الفرق تحتاج باقة الفريق لصاحب الفريق.' : 'Teams need the Team plan for the team owner.';
   if (code === 'team_full') return ar ? 'الفريق وصل للحد الأقصى (١٠ أعضاء).' : 'This team has reached the 10-member limit.';
+  if (code === 'promo_invalid') return ar ? 'كود الخصم غير صحيح أو انتهت صلاحيته.' : 'This promo code is not valid or has expired.';
+  if (code === 'promo_used_up') return ar ? 'كود الخصم استُخدم بالكامل.' : 'This promo code has been fully used.';
   return null;
 }
 /** This user's role in the current workspace; the personal workspace is always the owner's. */

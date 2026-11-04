@@ -1,6 +1,7 @@
 import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { body } from './http.js';
+import type { AiUsage } from './plans.js';
 import { z } from 'zod';
 import { validDay } from '../shared/productivity.js';
 import { ASSISTANT_NAME, type AssistantReply } from '../shared/assistant.js';
@@ -21,8 +22,8 @@ const PRIORITY_RULE = ' Set priority with the Eisenhower matrix: 1 urgent and im
 const TASKS_MODE = ' The user is dictating ONE OR MORE new tasks in one recording, possibly ten or more, in Egyptian Arabic, English, Franco-Arabic, or a mix. Split the transcript into separate add_task actions, one per distinct task, at most 20. Merge repeated mentions of the same task. Keep each title short and actionable, in the language it was spoken. Give each task its own spoken date/time: understand بكرة, بعد بكرة, النهاردة, الصبح, بالليل, العصر, Arabic number words, and weekday names (a bare weekday means its next occurrence); a time without a day means today if still ahead, otherwise tomorrow. Do not invent unspecified dates or times. targetId is always null. Never propose completion or notes in this mode. If nothing is clearly a task, return no actions and ask one short question. The reply briefly lists what you understood.';
 function problem(statusCode:number,message:string) { return new PublicError(statusCode,message); }
 const MAX_AUDIO = 6*1024*1024;
-/** meter runs before each chat or transcription request and may refuse it; the function it returns counts a successful one. */
-export function registerAssistant<U>(app:Hono,authorize:(c:Context)=>Promise<U>,limit:(name:string,max:number)=>MiddlewareHandler,options:AssistantOptions = {},meter:(user:U)=>Promise<()=>Promise<void>> = async () => async () => {}) {
+/** meter runs before each chat or transcription request and may refuse it; the function it returns records a successful one with OpenAI's usage. */
+export function registerAssistant<U>(app:Hono,authorize:(c:Context)=>Promise<U>,limit:(name:string,max:number)=>MiddlewareHandler,options:AssistantOptions = {},meter:(user:U)=>Promise<(usage:AiUsage)=>Promise<void>> = async () => async () => {}) {
   const key = options.key ?? process.env.OPENAI_API_KEY;
   const model = options.model ?? process.env.OPENAI_MODEL ?? 'gpt-6-luna';
   const transcriptionModel = options.transcriptionModel ?? process.env.OPENAI_TRANSCRIBE_MODEL ?? 'gpt-transcribe';
@@ -61,7 +62,7 @@ export function registerAssistant<U>(app:Hono,authorize:(c:Context)=>Promise<U>,
       if (a.type === 'complete_task' && !input.tasks.some(task => task.id === a.targetId && !task.done)) throw problem(502,'The assistant could not identify that task. Please use its exact title.');
       if (a.type === 'complete_task') a.title = input.tasks.find(task => task.id === a.targetId)!.title;
     }
-    await used();
+    await used({ kind:'chat',model,inputTokens:output.usage?.input_tokens,outputTokens:output.usage?.output_tokens });
     return c.json(result);
   });
   // The recording arrives as the raw request body (format and language in the query) and is passed on unchanged:
@@ -77,7 +78,7 @@ export function registerAssistant<U>(app:Hono,authorize:(c:Context)=>Promise<U>,
     form.append('model',transcriptionModel);
     const result = await request('audio/transcriptions',form);
     if (typeof result.text !== 'string' || !result.text.trim()) throw problem(422,'No speech was recognized. Please try again.');
-    await used();
+    await used({ kind:'transcribe',model:transcriptionModel,inputTokens:result.usage?.input_tokens,outputTokens:result.usage?.output_tokens,audioSeconds:result.usage?.seconds ?? result.duration });
     return c.json({ text:result.text.slice(0,4000) });
   });
 }
