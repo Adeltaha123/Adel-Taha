@@ -25,7 +25,8 @@ jobs:
         working-directory: mobile
         env:
           EXPO_BASE_URL: /${{ github.event.repository.name }}
-          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          # The 24/7 API on Cloudflare, built in so the site needs no address lookup (a repository variable can override it).
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'https://mypa-api.mohamed-tamer.workers.dev' }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: mobile/dist

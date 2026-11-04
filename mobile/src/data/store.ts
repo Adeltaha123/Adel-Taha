@@ -118,7 +118,8 @@ async function call<T>(path:string, send:Send, timeout:number, signal?:AbortSign
     } catch (e) {
       if (signal?.aborted) throw e;
       if (!fixedOrigin) { lookup = null; throw offline(); }
-      throw new Error(ar() ? `تعذّر الوصول إلى خادم My PA على ${origin}. شغّل npm run expo:dev على الكمبيوتر وتأكد أن الهاتف على نفس شبكة Wi-Fi.` : `Can't reach the My PA server at ${origin}. Run npm run expo:dev on your computer and keep the phone on the same Wi-Fi.`);
+      const host = origin.replace(/^https?:\/\//, '');
+      throw new Error(ar() ? `تعذّر الوصول إلى خادم My PA (${host}). تأكد من اتصالك بالإنترنت وحاول مرة أخرى.` : `Can't reach the My PA server (${host}). Check your internet connection and try again.`);
     }
     let result:{ error?:string; code?:string };
     try { result = JSON.parse(response.text); } catch { result = { error:'API returned an invalid response.' }; }
