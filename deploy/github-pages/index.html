@@ -4,15 +4,42 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>My PA</title>
-<!-- My PA moved to Cloudflare, where the website and its server share one address. -->
-<meta http-equiv="refresh" content="0; url=https://mypa-api.mohamed-tamer.workers.dev/">
 <link rel="canonical" href="https://mypa-api.mohamed-tamer.workers.dev/">
-<script>location.replace('https://mypa-api.mohamed-tamer.workers.dev/');</script>
 <style>body{font-family:system-ui;background:#F3F5F2;color:#14201C;text-align:center;padding:64px 24px}a{color:#126B5A;font-weight:700}</style>
+<noscript><meta http-equiv="refresh" content="0; url=https://mypa-api.mohamed-tamer.workers.dev/"></noscript>
 </head>
 <body>
 <h1>My PA</h1>
-<p>انتقل التطبيق إلى عنوان جديد. · My PA has moved.</p>
+<p>ننقل بياناتك إلى العنوان الجديد… · Moving your data to the new address…</p>
 <p><a href="https://mypa-api.mohamed-tamer.workers.dev/">https://mypa-api.mohamed-tamer.workers.dev</a></p>
+<script>
+// My PA moved to Cloudflare. Browsers keep each address's storage separate, so this page reads what the old
+// address saved on this device (items saved without an account, by the current app and the first web app)
+// and hands it to the new address in the link's #fragment, which is never sent to any server.
+// Account data is already on the server and is not carried; neither is the sign-in session.
+(function () {
+  var target = 'https://mypa-api.mohamed-tamer.workers.dev/', done = false;
+  function go(hash) { if (done) return; done = true; location.replace(target + (hash || '')); }
+  setTimeout(go, 15000); // Never strand anyone here, whatever happens below; packing normally takes milliseconds.
+  function read(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function parse(value) { try { return JSON.parse(value || 'null'); } catch (e) { return null; } }
+  function base64url(bytes) {
+    var binary = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  try {
+    var expo = parse(read('mypa_expo_v1')), legacy = parse(read('mk_items'));
+    var guest = expo && expo.scopes && expo.scopes.guest && expo.scopes.guest.records || {};
+    var payload = { v: 1, guest: guest, legacy: Array.isArray(legacy) ? legacy : [], pin: read('mypa_pin'), language: expo && expo.language };
+    if (!Object.keys(payload.guest).length && !payload.legacy.length && !payload.pin) return go('');
+    var bytes = new TextEncoder().encode(JSON.stringify(payload));
+    if (!window.CompressionStream) return go('#transfer=j' + base64url(bytes));
+    new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
+      .then(function (zipped) { go('#transfer=g' + base64url(new Uint8Array(zipped))); })
+      .catch(function () { go('#transfer=j' + base64url(bytes)); });
+  } catch (e) { go(''); }
+})();
+</script>
 </body>
 </html>

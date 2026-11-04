@@ -17,13 +17,15 @@ import { CheckIns } from '../features/CheckIns';
 import { AssistantNamePrompt } from '../features/AssistantName';
 import { Lock } from '../features/Lock';
 import { initializeLock, useLock } from '../platform/lock';
+import { applyTransfer } from '../data/transfer';
 type Tab = 'overview'|'tasks'|'assistant'|'library'|'account';
 const tabs:[Tab,keyof typeof icons,string,string][] = [['overview','overview','Today','اليوم'],['tasks','tasks','Tasks','المهام'],['assistant','assistant','Assistant','المساعد'],['library','library','Library','المكتبة'],['account','account','Account','الحساب']];
 export default function App() { return <SafeAreaProvider><Shell/></SafeAreaProvider>; }
 function Shell() {
-  const s = useStore(), lock = useLock(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false);
+  const s = useStore(), lock = useLock(), t = useText(), c = useTheme(), [tab,setTab] = useState<Tab>('overview'), [library,setLibrary] = useState('notes'), [guest,setGuest] = useState(false), [voice,setVoice] = useState(false), [transferred,setTransferred] = useState(0);
   useEffect(()=>{if(s.session)setGuest(false);},[s.session]);
-  useEffect(() => { void initialize(); void initializeLock(); const interval = setInterval(() => { if (AppState.currentState === 'active') void sync().catch(() => {}); },30000);
+  // Items handed over from the old website address are stored before the app reads its storage.
+  useEffect(() => { void applyTransfer().then(added => { setTransferred(added); void initialize(); void initializeLock(); }); const interval = setInterval(() => { if (AppState.currentState === 'active') void sync().catch(() => {}); },30000);
     const listener = AppState.addEventListener('change',value => { if (value === 'active') void sync().catch(() => {}); });
     return () => { clearInterval(interval); listener.remove(); };
   },[]);
@@ -39,6 +41,7 @@ function Shell() {
           <IconButton icon={c.dark ? 'sun' : 'moon'} size={40} label={c.dark ? t('Light mode','الوضع الفاتح') : t('Dark mode','الوضع الداكن')} onPress={() => setTheme(c.dark ? 'light' : 'dark')}/>
           <Chip title={s.language === 'en' ? 'العربية' : 'English'} active={false} onPress={() => setLanguage(s.language === 'en' ? 'ar' : 'en')}/></View></View>
       {inside && <View style={[styles.row,{ justifyContent:'space-between' }]}><View style={{ alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:6,backgroundColor:c.surface,borderWidth:1,borderColor:c.line,borderRadius:999,paddingHorizontal:10,paddingVertical:4 }}><View style={{ width:7,height:7,borderRadius:4,backgroundColor:s.session ? c.accent : c.gold }}/><Text style={{ fontSize:12,color:c.muted }}>{s.status || t('Saved on this device','محفوظ على الجهاز')}</Text></View>{s.undo && <Chip title={t('Undo last change','تراجع عن آخر تغيير')} active={false} onPress={undoChange}/>}</View>}
+      {s.ready && transferred > 0 && <View style={{ gap:8 }}><Notice>{t(`${transferred} item(s) from the old My PA address are here. Sign in, then open Account and tap Copy them here to add them to your account.`,`${transferred} عنصر من عنوان My PA القديم موجود هنا. سجّل الدخول، ثم افتح الحساب واضغط «انسخها هنا» لإضافتها إلى حسابك.`)}</Notice><Button title={t('OK','حسناً')} secondary onPress={() => setTransferred(0)}/></View>}
       {inside && s.session && myRole() === 'viewer' && <Notice>{t('You are a viewer in this team: you can see its tasks, but changes are not saved.','أنت مشاهد في هذا الفريق: ترى المهام لكن تعديلاتك لا تُحفظ.')}</Notice>}
       {!!s.error && <View style={{ gap:8 }}><Notice tone="error">{s.error}</Notice><Button title={t('Dismiss','إغلاق')} secondary onPress={clearError}/></View>}</View>
     {inside && tab === 'library' && <View style={[styles.row,{ paddingHorizontal:20,paddingTop:4 }]}>{[['notes','Notes','ملاحظات'],['habits','Habits','عادات'],['commands','Commands','أوامر']].map(([id,en,ar]) => <Chip key={id} title={t(en!,ar!)} active={library === id} onPress={() => setLibrary(id!)}/>)}</View>}

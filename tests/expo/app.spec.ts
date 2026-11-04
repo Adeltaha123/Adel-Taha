@@ -276,3 +276,31 @@ test('leaving the app while recording keeps the recording, and unsaved tasks sur
   await page.getByRole('button',{ name:'Say a task',exact:true }).first().click();
   await expect(page.getByText('Your unsaved tasks from last time are back.',{exact:true})).toHaveCount(0);
 });
+test('opening the old address carries this device\'s old items and PIN to the new address',async({page})=>{
+  const { readFileSync } = await import('node:fs');
+  const oldPin='test:'+createHash('sha256').update('test:2468').digest('hex');
+  // The old address, with what its storage held from the first web app (mk_items) and the Expo site (mypa_expo_v1).
+  await page.addInitScript(pin=>{ if(location.hostname!=='adeltaha123.github.io') return;
+    localStorage.setItem('mk_items',JSON.stringify([['task_old',{kind:'task',title:'Old first-app task',q:1,done:false,items:[]}],['voice_old',{kind:'voice',text:'Old voice transcript'}],['sample',{kind:'task',title:'Sample',example:true}],['settings',{kind:'settings',pinHash:'x'}]]));
+    localStorage.setItem('mypa_expo_v1',JSON.stringify({scopes:{guest:{records:{note_old:{id:'note_old',kind:'note',type:'note',text:'Old offline note'}},baseline:{},conflicts:[]}},language:'en',focusEnd:null}));
+    localStorage.setItem('mypa_pin',pin); },oldPin);
+  await page.route('https://adeltaha123.github.io/**',route=>route.fulfill({ contentType:'text/html', body:readFileSync('deploy/github-pages/index.html','utf8') }));
+  let forwarded='';
+  await page.route('https://mypa-api.mohamed-tamer.workers.dev/**',route=>{ forwarded=route.request().url(); return route.fulfill({ body:'new address' }); });
+  await page.goto('https://adeltaha123.github.io/Adel-Taha/');
+  await expect.poll(()=>forwarded).toContain('#transfer=');
+  // The new app, opened with what the old address handed over. This browser has no PIN yet, so the old one applies.
+  await page.addInitScript(()=>{ if(location.port==='5188'&&!sessionStorage.getItem('transfer_test')){ sessionStorage.setItem('transfer_test','1'); localStorage.removeItem('mypa_pin'); sessionStorage.removeItem('mypa_unlocked_at'); } });
+  await page.goto('/'+new URL(forwarded).hash);
+  await expect(page.getByText('Enter your PIN',{exact:true})).toBeVisible();
+  for(const d of '2468') await page.getByRole('button',{name:d,exact:true}).click();
+  await expect(page.getByText(/^3 item\(s\) from the old My PA address are here/)).toBeVisible();
+  expect(new URL(page.url()).hash).toBe(''); // The data leaves the address bar once it is stored.
+  await page.getByRole('button',{name:'Continue offline',exact:true}).click();
+  await page.getByRole('button',{name:'Tasks',exact:true}).click();
+  await expect(page.getByText('Old first-app task',{exact:true})).toBeVisible();
+  await expect(page.getByText('Sample',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Library',exact:true}).click();await page.getByRole('button',{name:'Notes',exact:true}).click();
+  await expect(page.getByText('Old offline note',{exact:true})).toBeVisible();
+  await expect(page.getByText('Old voice transcript',{exact:true})).toBeVisible();
+});
