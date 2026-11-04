@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { generateKeyPair, SignJWT } from 'jose';
-import { createApi } from '../server/app.js';
+import { createApi } from '../server/node.js';
 
 const config = { origin:'https://pa.example', googleId:'google-client', googleSecret:'google-secret', metaId:'meta-app', metaSecret:'meta-secret', allowExpoGo:true };
 const expoReturn = 'exp://192.168.1.5:8081/--/auth';

@@ -23,9 +23,8 @@
     "check": "npm run typecheck && npm run test && npm run api:build"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.1",
-    "@fastify/rate-limit": "^11.2.1",
-    "fastify": "^5.12.7",
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.16",
     "jose": "^6.2.14",
     "zod": "^4.6.7"
   },
@@ -34,6 +33,7 @@
     "@types/node": "^22.0.0",
     "cloudflared": "^0.7.3",
     "tsx": "^4.23.15",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "wrangler": "^4.157.0"
   }
 }

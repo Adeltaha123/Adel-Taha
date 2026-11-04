@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createApi } from '../server/app.js';
+import { createApi } from '../server/node.js';
 import { proposedRecord } from '../shared/assistant.js';
 import { recordSchema } from '../server/records.js';
 test('approved task and note proposals conform to the shared sync record schema',() => {
@@ -34,10 +34,10 @@ test('assistant authenticates, validates proposals, transcribes and never automa
     assert.equal((await app.inject({ method:'POST',url:'/api/assistant/chat',headers,payload })).statusCode,502);
     output.actions[0] = { type:'add_task',title:'Bad date',due:'2026-02-31',time:null,targetId:null };
     assert.equal((await app.inject({ method:'POST',url:'/api/assistant/chat',headers,payload })).statusCode,502);
-    const audio = await app.inject({ method:'POST',url:'/api/assistant/transcribe',headers,payload:{ audio:Buffer.from('mock recording').toString('base64'),format:'m4a',language:'en' } });
+    const audio = await app.inject({ method:'POST',url:'/api/assistant/transcribe?format=m4a&language=en',headers:{ ...headers,'content-type':'audio/mp4' },payload:'mock recording' });
     assert.equal(audio.statusCode,200); assert.equal(audio.json().text,'Plan my day');
     assert.equal(calls.at(-1)!.body.get('model'),'gpt-transcribe'); assert.equal(calls.at(-1)!.body.get('file').name,'voice.m4a');
-    assert.equal((await app.inject({ method:'POST',url:'/api/assistant/transcribe',headers,payload:{ audio:'!!bad!!',format:'m4a',language:'en' } })).statusCode,400);
+    assert.equal((await app.inject({ method:'POST',url:'/api/assistant/transcribe?format=mp3&language=en',headers,payload:'mock recording' })).statusCode,400);
   } finally { await app.close(); }
 });
 test('assistant missing configuration and upstream failures do not expose credentials',async () => {

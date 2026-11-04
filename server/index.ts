@@ -1,9 +1,11 @@
-import { createApi } from './app.js';
+import { serve } from '@hono/node-server';
+import { createApi } from './node.js';
 
-const app = await createApi({
+// The API under Node (a PC or VPS). Cloudflare runs the same app from worker.ts.
+const api = await createApi({
   databasePath: process.env.API_DB ?? 'data/my-pa.sqlite',
   origins: process.env.API_ORIGINS?.split(',').map(value => value.trim()),
 });
-const address = await app.listen({ host: process.env.API_HOST ?? '127.0.0.1', port: Number(process.env.API_PORT ?? 3001) });
-console.log(`My PA API listening at ${address}`);
-for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void app.close().then(() => process.exit(0)); });
+const hostname = process.env.API_HOST ?? '127.0.0.1', port = Number(process.env.API_PORT ?? 3001);
+const server = serve({ fetch: api.fetch, hostname, port }, info => console.log(`My PA API listening at http://${info.address}:${info.port}`));
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { server.close(); void api.close().then(() => process.exit(0)); });

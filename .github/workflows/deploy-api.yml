@@ -1,0 +1,36 @@
+name: Deploy API to Cloudflare
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'shared/**', 'wrangler.toml', 'package.json', 'package-lock.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      # Until the CLOUDFLARE_API_TOKEN secret is added (docs/CLOUDFLARE.md), deploys happen from the PC and this job only notes that.
+      - if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::CLOUDFLARE_API_TOKEN is not set; skipping the automatic deploy."
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        uses: actions/checkout@v6
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm ci
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm run check
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx wrangler deploy
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        name: Check the live API
+        run: node scripts/smoke-api.mjs "$(curl -fs "https://raw.githubusercontent.com/Adeltaha123/Adel-Taha/server-address/server.json?t=$(date +%s)" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).api))")"

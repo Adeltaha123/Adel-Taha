@@ -1,9 +1,10 @@
-import {api,origin} from '../data/store';
+import {api,apiUpload,origin} from '../data/store';
 import type {Language} from '../../../shared/domain';
 import type {AssistantReply} from '../../../shared/assistant';
 import {dayKey} from '../../../shared/productivity';
-import type {recordingPayload} from '../platform/voice';
-export const transcribe=(audio:Awaited<ReturnType<typeof recordingPayload>>,language:Language,signal:AbortSignal)=>api<{text:string}>('/assistant/transcribe',{...audio,language},55000,signal);
+import {recordingUpload} from '../platform/voice';
+/** Uploads a finished recording file and returns its text. */
+export async function transcribe(uri:string,language:Language,signal:AbortSignal){const {format,upload}=await recordingUpload(uri);return apiUpload<{text:string}>('/assistant/transcribe?format='+format+'&language='+language,upload,55000,signal);}
 /** Splits one dictation into up to 20 prioritized task proposals. */
 export const understandTasks=(message:string,language:Language,signal?:AbortSignal,assistantName='')=>api<AssistantReply>('/assistant/chat',{message,language,today:dayKey(),tasks:[],history:[],intent:'tasks',...(assistantName?{assistantName}:{})},90000,signal);
 /** Resolves to null when voice and AI are ready, otherwise to a message that says what is missing. */

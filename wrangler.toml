@@ -1,0 +1,23 @@
+# The My PA API on Cloudflare Workers (free plan) with a D1 database. See docs/CLOUDFLARE.md.
+name = "mypa-api"
+main = "server/worker.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+API_ORIGINS = "https://adeltaha123.github.io,http://localhost:8081,http://127.0.0.1:8081"
+NODE_ENV = "production"
+# The free plan allows about 10 ms of CPU per request; 10,000 PBKDF2 rounds stays well inside it.
+# On the $5 Workers plan raise this (for example to 210000); existing passwords upgrade at their next login.
+PASSWORD_ITERATIONS = "10000"
+# Who people contact to subscribe, shown on the Account screen.
+SUBSCRIBE_CONTACT = ""
+# Secrets are set with `npx wrangler secret put NAME`, never here: OPENAI_API_KEY, ADMIN_TOKEN.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mypa"
+database_id = "00000000-0000-0000-0000-000000000000" # replaced by the real ID when the database is created
+
+[observability]
+enabled = true

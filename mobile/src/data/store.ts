@@ -104,27 +104,38 @@ async function currentOrigin() {
 }
 const ar = () => state.language === 'ar';
 const offline = () => new Error(ar() ? 'خادم My PA غير متصل الآن. شغّله على الكمبيوتر بالأمر npm run server:online، أو تابع دون حساب.' : 'The My PA server is offline right now. Start it on your PC with npm run server:online, or continue offline.');
-export async function api<T>(path:string, body?:unknown, timeout=15000,signal?:AbortSignal):Promise<T> {
+type Send = (url:string, headers:Record<string,string>, signal:AbortSignal) => Promise<{ status:number; text:string }>;
+/** One API call: finds the server, adds the session, enforces the timeout, and turns failures into readable errors. */
+async function call<T>(path:string, send:Send, timeout:number, signal?:AbortSignal):Promise<T> {
   const origin = await currentOrigin();
   if (!origin) throw offline();
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout);
   const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)controller.abort();
   try {
-    let response:Response;
+    let response:{ status:number; text:string };
     try {
-      response = await fetch(`${origin}/api${path}`, { method:body === undefined ? 'GET' : 'POST', signal:controller.signal,
-        headers:{ 'Content-Type':'application/json', ...(state.session ? { Authorization:`Bearer ${state.session.token}` } : {}) },
-        ...(body === undefined ? {} : { body:JSON.stringify(body) }) });
+      response = await send(`${origin}/api${path}`, state.session ? { Authorization:`Bearer ${state.session.token}` } : {}, controller.signal);
     } catch (e) {
       if (signal?.aborted) throw e;
       if (!fixedOrigin) { lookup = null; throw offline(); }
       throw new Error(ar() ? `تعذّر الوصول إلى خادم My PA على ${origin}. شغّل npm run expo:dev على الكمبيوتر وتأكد أن الهاتف على نفس شبكة Wi-Fi.` : `Can't reach the My PA server at ${origin}. Run npm run expo:dev on your computer and keep the phone on the same Wi-Fi.`);
     }
-    const result = await response.json().catch(() => ({ error:'API returned an invalid response.' }));
+    let result:{ error?:string; code?:string };
+    try { result = JSON.parse(response.text); } catch { result = { error:'API returned an invalid response.' }; }
     if (response.status === 401 && state.session && path !== '/auth/logout') await forgetSession();
-    if (!response.ok) throw new Error(planMessage(result.code) ?? result.error ?? `Request failed (${response.status})`);
-    return result;
+    if (response.status < 200 || response.status >= 300) throw new Error(planMessage(result.code) ?? result.error ?? `Request failed (${response.status})`);
+    return result as T;
   } finally { clearTimeout(timer);signal?.removeEventListener('abort',abort); }
+}
+export function api<T>(path:string, body?:unknown, timeout=15000, signal?:AbortSignal):Promise<T> {
+  return call<T>(path, async (url, headers, abort) => {
+    const response = await fetch(url, { method:body === undefined ? 'GET' : 'POST', signal:abort, headers:{ 'Content-Type':'application/json', ...headers }, ...(body === undefined ? {} : { body:JSON.stringify(body) }) });
+    return { status:response.status, text:await response.text() };
+  }, timeout, signal);
+}
+/** Sends a recording as the raw request body (cheaper for the server than base64 inside JSON). */
+export function apiUpload<T>(path:string, upload:(url:string, headers:Record<string,string>, signal:AbortSignal) => Promise<{ status:number; text:string }>, timeout:number, signal?:AbortSignal):Promise<T> {
+  return call<T>(path, upload, timeout, signal);
 }
 export async function acceptSession(session:Session) {
   await setSecret('mypa_session',JSON.stringify(session));

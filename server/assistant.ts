@@ -1,4 +1,6 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { Context, Hono, MiddlewareHandler } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
+import { body } from './http.js';
 import { z } from 'zod';
 import { validDay } from '../shared/productivity.js';
 import { ASSISTANT_NAME, type AssistantReply } from '../shared/assistant.js';
@@ -18,8 +20,9 @@ const outputSchema = { type:'object',additionalProperties:false,required:['reply
 const PRIORITY_RULE = ' Set priority with the Eisenhower matrix: 1 urgent and important (deadline today/tomorrow, "lazem", "urgent", "ضروري"), 2 important not urgent (planning, follow-ups, meetings later), 3 urgent not important (quick calls/errands someone else could do), 4 neither; null when unclear.';
 const TASKS_MODE = ' The user is dictating ONE OR MORE new tasks in one recording, possibly ten or more, in Egyptian Arabic, English, Franco-Arabic, or a mix. Split the transcript into separate add_task actions, one per distinct task, at most 20. Merge repeated mentions of the same task. Keep each title short and actionable, in the language it was spoken. Give each task its own spoken date/time: understand بكرة, بعد بكرة, النهاردة, الصبح, بالليل, العصر, Arabic number words, and weekday names (a bare weekday means its next occurrence); a time without a day means today if still ahead, otherwise tomorrow. Do not invent unspecified dates or times. targetId is always null. Never propose completion or notes in this mode. If nothing is clearly a task, return no actions and ask one short question. The reply briefly lists what you understood.';
 function problem(statusCode:number,message:string) { return new PublicError(statusCode,message); }
+const MAX_AUDIO = 6*1024*1024;
 /** meter runs before each chat or transcription request and may refuse it; the function it returns counts a successful one. */
-export function registerAssistant<U>(app:FastifyInstance,authorize:(req:FastifyRequest)=>U,options:AssistantOptions = {},meter:(user:U)=>()=>void = () => () => {}) {
+export function registerAssistant<U>(app:Hono,authorize:(c:Context)=>Promise<U>,limit:(name:string,max:number)=>MiddlewareHandler,options:AssistantOptions = {},meter:(user:U)=>Promise<()=>Promise<void>> = async () => async () => {}) {
   const key = options.key ?? process.env.OPENAI_API_KEY;
   const model = options.model ?? process.env.OPENAI_MODEL ?? 'gpt-6-luna';
   const transcriptionModel = options.transcriptionModel ?? process.env.OPENAI_TRANSCRIBE_MODEL ?? 'gpt-transcribe';
@@ -36,9 +39,9 @@ export function registerAssistant<U>(app:FastifyInstance,authorize:(req:FastifyR
       throw problem(502,'The AI service could not be reached. Your records have not changed.');
     } finally { clearTimeout(timer); }
   }
-  app.get('/api/assistant/status',async req => { authorize(req); return { configured:Boolean(key),model,transcriptionModel }; });
-  app.post('/api/assistant/chat',{ config:{ rateLimit:{ max:10,timeWindow:'1 minute' } } },async req => {
-    const user = authorize(req); const input = chatInput.parse(req.body); const used = meter(user);
+  app.get('/api/assistant/status',async c => { await authorize(c); return c.json({ configured:Boolean(key),model,transcriptionModel }); });
+  app.post('/api/assistant/chat',limit('assistant',10),async c => {
+    const user = await authorize(c); const input = await body(c,chatInput); const used = await meter(user);
     if (input.history.reduce((sum,m) => sum+m.content.length,0) > 16000) throw problem(400,'Conversation is too long. Start a new conversation.');
     const taskMode=input.intent==='task', tasksMode=input.intent==='tasks';
     const output = await request('responses',JSON.stringify({ model,store:false,max_output_tokens:taskMode?1200:tasksMode?4000:2500,
@@ -58,20 +61,23 @@ export function registerAssistant<U>(app:FastifyInstance,authorize:(req:FastifyR
       if (a.type === 'complete_task' && !input.tasks.some(task => task.id === a.targetId && !task.done)) throw problem(502,'The assistant could not identify that task. Please use its exact title.');
       if (a.type === 'complete_task') a.title = input.tasks.find(task => task.id === a.targetId)!.title;
     }
-    used();
-    return result;
+    await used();
+    return c.json(result);
   });
-  app.post('/api/assistant/transcribe',{ bodyLimit:9*1024*1024,config:{ rateLimit:{ max:10,timeWindow:'1 minute' } } },async req => {
-    const user = authorize(req);
-    const input = z.object({ audio:z.string().min(4).max(8*1024*1024).regex(/^[A-Za-z0-9+/]+={0,2}$/),format:z.enum(['m4a','webm','wav']),language:z.enum(['en','ar']) }).parse(req.body);
-    const bytes = Buffer.from(input.audio,'base64');
-    if (bytes.length > 6*1024*1024) throw problem(413,'Recording is too large. Keep voice messages under one minute.');
-    const used = meter(user);
-    const form = new FormData(); form.append('file',new Blob([bytes],{ type:input.format === 'm4a' ? 'audio/mp4' : `audio/${input.format}` }),`voice.${input.format}`);
+  // The recording arrives as the raw request body (format and language in the query) and is passed on unchanged:
+  // decoding base64 or JSON would cost more CPU than Cloudflare's free plan allows per request.
+  app.post('/api/assistant/transcribe',limit('assistant',10),bodyLimit({ maxSize:MAX_AUDIO,onError:()=>{ throw problem(413,'Recording is too large. Keep voice messages under one minute.'); } }),async c => {
+    const user = await authorize(c);
+    const input = z.object({ format:z.enum(['m4a','webm','wav']),language:z.enum(['en','ar']) }).parse(c.req.query());
+    const audio = await c.req.arrayBuffer();
+    if (audio.byteLength < 4) throw problem(400,'Nothing was recorded. Please try again.');
+    if (audio.byteLength > MAX_AUDIO) throw problem(413,'Recording is too large. Keep voice messages under one minute.');
+    const used = await meter(user);
+    const form = new FormData(); form.append('file',new Blob([audio],{ type:input.format === 'm4a' ? 'audio/mp4' : `audio/${input.format}` }),`voice.${input.format}`);
     form.append('model',transcriptionModel);
     const result = await request('audio/transcriptions',form);
     if (typeof result.text !== 'string' || !result.text.trim()) throw problem(422,'No speech was recognized. Please try again.');
-    used();
-    return { text:result.text.slice(0,4000) };
+    await used();
+    return c.json({ text:result.text.slice(0,4000) });
   });
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mergeRecords, mutationsFor, syncable } from '../shared/sync.js';
 import { dayKey, focusRemaining, taskSummary, validDay } from '../shared/productivity.js';
-import { createApi } from '../server/app.js';
+import { createApi } from '../server/node.js';
 test('shared sync preserves in-flight edits, conflicts, tombstones and local audio', () => {
   const before = { a:{ id:'a',kind:'task',title:'before' }, b:{ id:'b',kind:'voice',text:'words',audioId:'local' } };
   const remote = [{ id:'a',version:2,deleted:false,data:{ ...before.a,title:'remote' } },{ id:'b',version:2,deleted:false,data:{ id:'b',kind:'voice',text:'new words' } }];

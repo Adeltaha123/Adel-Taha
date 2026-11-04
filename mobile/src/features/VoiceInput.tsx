@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {AppState,Pressable,Text,View} from 'react-native';
 import {AudioModule,RecordingPresets,setAudioModeAsync,useAudioRecorder,useAudioRecorderState} from 'expo-audio';
 import * as Speech from 'expo-speech';
-import {recordingPayload,discardRecording,forgetKept,keepRecording,keptRecording} from '../platform/voice';
+import {discardRecording,forgetKept,keepRecording,keptRecording} from '../platform/voice';
 import {transcribe} from '../services/assistant';
 import {useStore} from '../data/store';
 import {Button,Icon,IconButton,Notice,useText,useTheme} from '../app/ui';
@@ -23,7 +23,7 @@ export function VoiceInput({available,onText,onBusyChange,compact=false,unavaila
   async function finish(){await recorder.stop();await setAudioModeAsync({allowsRecording:false});const uri=recorder.uri;if(!uri)throw new Error(t('Nothing was recorded. Please try again.','لم يتم تسجيل صوت. حاول مرة أخرى.'));keep(uri);return uri;}
   async function send(uri:string){
     const run=++generation.current;transition('transcribing');setError('');controller.current=new AbortController();
-    try{const payload=await recordingPayload(uri);const result=await transcribe(payload,s.language,controller.current.signal);if(!alive.current||run!==generation.current)return;
+    try{const result=await transcribe(uri,s.language,controller.current.signal);if(!alive.current||run!==generation.current)return;
       await drop();transition('understanding');await onText(result.text,controller.current.signal);
     }catch(e){if(alive.current&&run===generation.current)setError(e instanceof Error?e.message:String(e));}
     finally{if(alive.current&&run===generation.current)transition('idle');}

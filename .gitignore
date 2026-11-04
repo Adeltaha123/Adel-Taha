@@ -24,3 +24,6 @@ mobile/ios/
 *.p8
 *.p12
 *.mobileprovision
+.dev.vars
+.wrangler/
+build-worker/

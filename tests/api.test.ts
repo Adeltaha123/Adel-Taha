@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiDatabase, createApi } from '../server/app.js';
+import { apiDatabase, createApi } from '../server/node.js';
 import { setPlan } from '../server/plans.js';
 import { FREE_AI_PER_MONTH, type PlanInfo } from '../shared/plans.js';
 import type { User, Workspace, SyncResult } from '../shared/api.js';
@@ -24,7 +24,7 @@ test('shared API authenticates, isolates accounts, delegates team tasks, and pre
     assert.equal((await api.inject({ method:'POST', url:`/api/workspaces/${personal.id}/sync`, headers:headers(bob.token), payload:{ mutations:[] } })).statusCode, 404);
     assert.equal((await api.inject({ method:'POST', url:`/api/workspaces/${personal.id}/invitations`, headers:headers(alice.token), payload:{} })).statusCode, 403);
     assert.equal((await api.inject({ method:'POST', url:'/api/workspaces', headers:headers(alice.token), payload:{ name:'Operations' } })).statusCode, 402); // Teams need the Team plan.
-    setPlan(apiDatabase(api), 'alice@example.test', 'team');
+    await setPlan(apiDatabase(api), 'alice@example.test', 'team');
     const team = (await api.inject({ method:'POST', url:'/api/workspaces', headers:headers(alice.token), payload:{ name:'Operations' } })).json<Workspace>();
     const invite = (await api.inject({ method:'POST', url:`/api/workspaces/${team.id}/invitations`, headers:headers(alice.token), payload:{} })).json<{code:string}>();
     assert.equal((await api.inject({ method:'POST', url:'/api/invitations/join', headers:headers(bob.token), payload:invite })).statusCode, 200);
@@ -79,16 +79,16 @@ test('plans: free AI allowance, team coverage, roles, and role-based record rule
     const [owner, admin, member, viewer, free] = await Promise.all(['owner','admin','member','viewer','free'].map(n => register(`${n}@example.test`)));
     const headers = (token: string) => ({ authorization:`Bearer ${token}` });
     const plan = async (token: string) => (await api.inject({ method:'GET', url:'/api/plan', headers:headers(token) })).json<PlanInfo>();
-    const transcribe = (token: string) => api.inject({ method:'POST', url:'/api/assistant/transcribe', headers:headers(token), payload:{ audio:'AAAA', format:'webm', language:'en' } });
+    const transcribe = (token: string) => api.inject({ method:'POST', url:'/api/assistant/transcribe?format=webm&language=en', headers:{ ...headers(token), 'content-type':'audio/webm' }, payload:'AAAA' });
     // A free account gets the monthly allowance, then a clear 402 with a code the app can translate.
     for (let i = 0; i < FREE_AI_PER_MONTH; i++) assert.equal((await transcribe(free.token)).statusCode, 200);
     const refused = await transcribe(free.token);
     assert.equal(refused.statusCode, 402); assert.equal(refused.json().code, 'ai_limit');
     assert.deepEqual([(await plan(free.token)).aiUsed, (await plan(free.token)).aiLimit], [FREE_AI_PER_MONTH, FREE_AI_PER_MONTH]);
-    setPlan(apiDatabase(api), 'free@example.test', 'personal');
+    await setPlan(apiDatabase(api), 'free@example.test', 'personal');
     assert.equal((await plan(free.token)).aiLimit, null); assert.equal((await transcribe(free.token)).statusCode, 200);
     // The Team plan owner invites with roles; only the owner may invite admins.
-    setPlan(apiDatabase(api), 'owner@example.test', 'team');
+    await setPlan(apiDatabase(api), 'owner@example.test', 'team');
     const team = (await api.inject({ method:'POST', url:'/api/workspaces', headers:headers(owner.token), payload:{ name:'Sales' } })).json<Workspace>();
     const join = async (inviter: string, role: string, joiner: string) => {
       const invite = await api.inject({ method:'POST', url:`/api/workspaces/${team.id}/invitations`, headers:headers(inviter), payload:{ role } });

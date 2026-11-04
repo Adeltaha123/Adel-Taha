@@ -1,7 +1,7 @@
 name: Check application
 on:
   push:
-    # server-address only holds the address published by npm run server:online.
+    # server-address only holds the address published by npm run server:address / server:online.
     branches-ignore: [server-address]
   pull_request:
 permissions:
@@ -20,10 +20,19 @@ jobs:
             mobile/package-lock.json
       - run: npm ci
       - run: npm run check
+      # The API as Cloudflare runs it: bundle the Worker, start it in the local Workers runtime, and smoke-test it.
+      - run: npx wrangler deploy --dry-run --outdir build-worker
+      - name: Smoke-test the Worker
+        run: |
+          npx wrangler dev --local --port 8787 --ip 127.0.0.1 > wrangler.log 2>&1 &
+          for i in $(seq 1 90); do curl -fs http://127.0.0.1:8787/api/health >/dev/null && break; sleep 2; done
+          node scripts/smoke-api.mjs http://127.0.0.1:8787 --full || (cat wrangler.log; exit 1)
       - run: npm ci --prefix mobile
       - run: npm run expo:check
+      # Expo publishes patch releases often; being one patch behind is a reminder, not a broken build.
       - run: npx expo install --check
         working-directory: mobile
+        continue-on-error: true
       - run: npm run export
         working-directory: mobile
       - run: npx playwright install --with-deps chromium

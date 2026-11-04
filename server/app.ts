@@ -1,20 +1,20 @@
-import Fastify, { type FastifyRequest } from 'fastify';
-import cors from '@fastify/cors';
-import rateLimit from '@fastify/rate-limit';
-import { createHash, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
+import { Hono, type Context } from 'hono';
+import { cors } from 'hono/cors';
+import { bodyLimit } from 'hono/body-limit';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { openDatabase } from './database.js';
+import { migrate, type Db, type Statement } from './db.js';
 import { recordSchema } from './records.js';
 import { registerAssistant, type AssistantOptions } from './assistant.js';
 import { PublicError } from './public-error.js';
-import { registerOAuth,type OAuthOptions } from './oauth.js';
+import { registerOAuth, type OAuthOptions } from './oauth.js';
+import { HttpError, body, errorResponse, rateLimiter } from './http.js';
+import { dummyCheck, hashPassword, needsRehash, verifyPassword } from './passwords.js';
 import { ASSISTANT_NAME } from '../shared/assistant.js';
 import { TEAM_MAX_MEMBERS, assignableRoles, canChangeMember, canManageTeam, canWrite, type Role } from '../shared/plans.js';
-import { planInfo, requireTeamPlan, useAi } from './plans.js';
+import { listPlans, planInfo, requireTeamPlan, setPlan, useAi } from './plans.js';
 import type { CloudRecord, User, Workspace } from '../shared/api.js';
 
-const scrypt = promisify(scryptCallback);
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const credentials = z.object({ email: z.string().email().max(254).transform(v => v.toLowerCase()), password: z.string().min(10).max(128) });
 const registration = credentials.extend({ name: z.string().trim().min(1).max(80) });
@@ -23,204 +23,220 @@ const syncSchema = z.object({ mutations: z.array(z.object({
   id: idSchema, expectedVersion: z.number().int().nonnegative(),
   data: z.record(z.string(), z.unknown()).nullable(),
 })).max(100) });
-class HttpError extends Error { constructor(public statusCode: number, message: string) { super(message); } }
+const roleSchema = z.enum(['admin', 'member', 'viewer']);
+const DAY_MS = 24 * 3600_000, SESSION_MS = 30 * DAY_MS;
+const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
 
-/** The database behind an API instance, for tests and maintenance scripts that run in the same process. */
-const databases = new WeakMap<object, ReturnType<typeof openDatabase>>();
-export const apiDatabase = (app: object) => databases.get(app)!;
+export interface ApiOptions { origins?: string[]; rateLimit?: boolean; assistant?: AssistantOptions; oauth?: OAuthOptions }
+export const DEFAULT_ORIGINS = ['http://localhost:8081', 'http://127.0.0.1:8081', 'https://adeltaha123.github.io'];
 
-export async function createApi(options: { databasePath?: string; origins?: string[]; rateLimit?: boolean; assistant?:AssistantOptions;oauth?:OAuthOptions } = {}) {
-  const db = openDatabase(options.databasePath ?? 'data/my-pa.sqlite');
-  const app = Fastify({ bodyLimit: 2 * 1024 * 1024, logger: false });
-  const origins = options.origins ?? ['http://localhost:8081', 'http://127.0.0.1:8081', 'https://adeltaha123.github.io'];
-  await app.register(cors, { origin: origins, methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'Authorization'] });
-  if (options.rateLimit !== false) await app.register(rateLimit, { max: 180, timeWindow: '1 minute' });
-  app.addHook('onClose', async () => db.close());
-  app.addHook('onSend', async (_req, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Content-Type-Options', 'nosniff'); });
-  app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid request', details: error.issues.map(i => i.message) });
-    const status = (error as HttpError).statusCode ?? 500;
-    reply.code(status).send({ error: status >= 500 && !(error instanceof PublicError) ? 'The server could not complete this request.' : (error as Error).message, ...(error instanceof PublicError && error.code ? { code: error.code } : {}) });
-  });
+/** The whole API, independent of where it runs: server/node.ts serves it with node:sqlite, server/worker.ts on Cloudflare with D1. */
+export function buildApp(db: Db, options: ApiOptions = {}) {
+  const app = new Hono();
+  const ready = migrate(db);
+  const limit = rateLimiter(options.rateLimit !== false);
+  app.onError(errorResponse);
+  app.notFound(c => c.json({ error: 'Not found.' }, 404));
+  app.use('*', cors({ origin: options.origins ?? DEFAULT_ORIGINS, allowMethods: ['GET', 'POST'], allowHeaders: ['Content-Type', 'Authorization'] }));
+  app.use('*', async (c, next) => { await ready; await next(); c.header('Cache-Control', 'no-store'); c.header('X-Content-Type-Options', 'nosniff'); });
+  app.use('/api/*', limit('all', 180));
+  app.use('/api/*', async (c, next) => c.req.path === '/api/assistant/transcribe' ? next() : bodyLimit({ maxSize: 2 * 1024 * 1024, onError: c => c.json({ error: 'Request is too large.' }, 413) })(c, next));
 
-  const DAY_MS = 24 * 3600_000, SESSION_MS = 30 * DAY_MS;
-  function userFor(request: FastifyRequest): User {
-    const token = request.headers.authorization?.match(/^Bearer ([a-zA-Z0-9_-]{43})$/)?.[1];
+  async function userFor(c: Context): Promise<User> {
+    const token = c.req.header('authorization')?.match(/^Bearer ([a-zA-Z0-9_-]{43})$/)?.[1];
     if (!token) throw new HttpError(401, 'Sign in to continue.');
     const now = Date.now();
-    const row = db.prepare('SELECT u.id,u.email,u.name,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?').get(hash(token), now) as unknown as (User & { expires: number }) | undefined;
+    const row = await db.get<User & { expires: number }>('SELECT u.id,u.email,u.name,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.hash=? AND s.expires>?', hash(token), now);
     if (!row) throw new HttpError(401, 'Your session expired. Sign in again.');
     // Sliding expiry: a session in use is renewed (at most daily), so people sign in once per device.
-    if (row.expires - now < SESSION_MS - DAY_MS) db.prepare('UPDATE sessions SET expires=? WHERE hash=?').run(now + SESSION_MS, hash(token));
-    const { expires: _, ...user } = row;
-    return user;
+    if (row.expires - now < SESSION_MS - DAY_MS) await db.run('UPDATE sessions SET expires=? WHERE hash=?', now + SESSION_MS, hash(token));
+    return { id: row.id, email: row.email, name: row.name };
   }
-  function workspaceFor(request: FastifyRequest): { user: User; workspace: Workspace; role: Role } {
-    const user = userFor(request);
-    const { id } = z.object({ id: idSchema }).parse(request.params);
-    const row = db.prepare('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal,m.role FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE w.id=? AND m.user_id=?').get(id, user.id) as unknown as (Workspace & { role: Role }) | undefined;
+  async function workspaceFor(c: Context): Promise<{ user: User; workspace: Workspace; role: Role }> {
+    const user = await userFor(c);
+    const id = idSchema.parse(c.req.param('id'));
+    const row = await db.get<Workspace & { role: Role }>('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal,m.role FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE w.id=? AND m.user_id=?', id, user.id);
     if (!row) throw new HttpError(404, 'Workspace not found.');
     const { role, ...workspace } = row;
     return { user, workspace: { ...workspace, personal: Boolean(row.personal) }, role };
   }
-  function createWorkspace(userId: string, name: string, personal: boolean) {
-    const id = randomUUID();
-    db.prepare('INSERT INTO workspaces VALUES (?,?,?,?)').run(id, name, userId, Number(personal));
-    db.prepare('INSERT INTO members VALUES (?,?,?)').run(id, userId, 'owner');
-    return { id, name, ownerId: userId, personal };
+  /** The statements that create a workspace with its owner, for a batch with whatever else must happen together. */
+  function workspaceStatements(userId: string, name: string, personal: boolean) {
+    const workspace = { id: randomUUID(), name, ownerId: userId, personal };
+    const statements: Statement[] = [
+      ['INSERT INTO workspaces VALUES (?,?,?,?)', workspace.id, name, userId, Number(personal)],
+      ['INSERT INTO members VALUES (?,?,?)', workspace.id, userId, 'owner'],
+    ];
+    return { workspace, statements };
   }
-  function session(user: User) {
-    db.prepare('DELETE FROM sessions WHERE expires<=?').run(Date.now());
+  async function session(user: User) {
     const token = randomBytes(32).toString('base64url');
-    db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(hash(token), user.id, Date.now() + SESSION_MS);
+    await db.batch([['DELETE FROM sessions WHERE expires<=?', Date.now()], ['INSERT INTO sessions VALUES (?,?,?)', hash(token), user.id, Date.now() + SESSION_MS]]);
     return { token, user };
   }
-  registerAssistant(app,userFor,options.assistant,user => useAi(db,user.id));
-  registerOAuth(app,db,{session,createWorkspace,userFor},options.oauth);
-  const authConfig = { rateLimit: { max: 10, timeWindow: '1 minute' } };
-  app.get('/api/health', async () => ({ ok: true }));
-  app.get('/api/plan', async request => planInfo(db, userFor(request).id));
+
+  registerAssistant(app, userFor, limit, options.assistant, user => useAi(db, user.id));
+  registerOAuth(app, db, { session, workspaceStatements, userFor, limit }, options.oauth);
+  app.get('/api/health', c => c.json({ ok: true }));
+  app.get('/api/plan', async c => c.json(await planInfo(db, (await userFor(c)).id)));
+
   // Per-user settings (not per workspace), so they follow the person to every device and are never shared with a team.
   const preferences = z.object({ language: z.enum(['en', 'ar']).optional(), theme: z.enum(['system', 'light', 'dark']).optional(), assistantName: z.string().trim().regex(ASSISTANT_NAME).optional() }).strict();
-  app.get('/api/preferences', async request => {
-    const row = db.prepare('SELECT data FROM preferences WHERE user_id=?').get(userFor(request).id) as { data: string } | undefined;
-    return row ? JSON.parse(row.data) : {};
+  app.get('/api/preferences', async c => {
+    const row = await db.get<{ data: string }>('SELECT data FROM preferences WHERE user_id=?', (await userFor(c)).id);
+    return c.json(row ? JSON.parse(row.data) : {});
   });
-  app.post('/api/preferences', async request => {
-    const user = userFor(request), next = preferences.parse(request.body);
-    const row = db.prepare('SELECT data FROM preferences WHERE user_id=?').get(user.id) as { data: string } | undefined;
+  app.post('/api/preferences', async c => {
+    const user = await userFor(c), next = await body(c, preferences);
+    const row = await db.get<{ data: string }>('SELECT data FROM preferences WHERE user_id=?', user.id);
     const merged = { ...(row ? JSON.parse(row.data) : {}), ...next };
-    db.prepare('INSERT INTO preferences VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data').run(user.id, JSON.stringify(merged));
-    return merged;
+    await db.run('INSERT INTO preferences VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data', user.id, JSON.stringify(merged));
+    return c.json(merged);
   });
-  app.post('/api/auth/register', { config: authConfig }, async (request, reply) => {
-    const body = registration.parse(request.body);
-    if (db.prepare('SELECT id FROM users WHERE email=?').get(body.email)) throw new HttpError(409, 'Unable to register with this email. Try signing in.');
-    const salt = randomBytes(16).toString('hex');
-    const digest = (await scrypt(body.password, salt, 64) as Buffer).toString('hex');
-    // Hashing yields to other registrations; recheck before the atomic insert.
-    if (db.prepare('SELECT id FROM users WHERE email=?').get(body.email)) throw new HttpError(409, 'Unable to register with this email. Try signing in.');
-    const user = { id: randomUUID(), name: body.name, email: body.email };
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      db.prepare('INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)').run(user.id, user.email, user.name, `${salt}:${digest}`);
-      createWorkspace(user.id, 'Personal', true);
-      db.exec('COMMIT');
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
-    return reply.code(201).send(session(user));
+
+  const taken = () => new HttpError(409, 'Unable to register with this email. Try signing in.');
+  app.post('/api/auth/register', limit('auth', 10), async c => {
+    const input = await body(c, registration);
+    if (await db.get('SELECT id FROM users WHERE email=?', input.email)) throw taken();
+    const user = { id: randomUUID(), name: input.name, email: input.email };
+    const personal = workspaceStatements(user.id, 'Personal', true);
+    // The email column is unique, so a registration racing this one fails here instead of creating a second account.
+    try { await db.batch([['INSERT INTO users (id,email,name,password) VALUES (?,?,?,?)', user.id, user.email, user.name, await hashPassword(input.password)], ...personal.statements]); }
+    catch (error) { if (/UNIQUE/i.test(String(error))) throw taken(); throw error; }
+    return c.json(await session(user), 201);
   });
-  app.post('/api/auth/login', { config: authConfig }, async request => {
-    const body = credentials.parse(request.body);
-    const row = db.prepare('SELECT * FROM users WHERE email=?').get(body.email) as { id: string; name: string; email: string; password: string } | undefined;
-    const [salt, expected] = (row?.password ?? `${'0'.repeat(32)}:${'0'.repeat(128)}`).split(':') as [string, string];
-    const digest = await scrypt(body.password, salt, 64) as Buffer;
-    if (!row || !timingSafeEqual(digest, Buffer.from(expected, 'hex'))) throw new HttpError(401, 'Email or password is incorrect.');
-    return session({ id: row.id, name: row.name, email: row.email });
+  app.post('/api/auth/login', limit('auth', 10), async c => {
+    const input = await body(c, credentials);
+    const row = await db.get<{ id: string; name: string; email: string; password: string }>('SELECT id,name,email,password FROM users WHERE email=?', input.email);
+    const wrong = () => new HttpError(401, 'Email or password is incorrect.');
+    if (!row) { await dummyCheck(input.password); throw wrong(); }
+    if (!await verifyPassword(input.password, row.password)) throw wrong();
+    if (needsRehash(row.password)) await db.run('UPDATE users SET password=? WHERE id=?', await hashPassword(input.password), row.id);
+    return c.json(await session({ id: row.id, name: row.name, email: row.email }));
   });
-  app.get('/api/auth/me', async request => userFor(request));
-  app.post('/api/auth/logout', async request => {
-    userFor(request);
-    db.prepare('DELETE FROM sessions WHERE hash=?').run(hash(request.headers.authorization!.slice(7)));
-    return { ok: true };
+  app.get('/api/auth/me', async c => c.json(await userFor(c)));
+  app.post('/api/auth/logout', async c => {
+    await userFor(c);
+    await db.run('DELETE FROM sessions WHERE hash=?', hash(c.req.header('authorization')!.slice(7)));
+    return c.json({ ok: true });
   });
-  app.get('/api/workspaces', async request => {
-    const user = userFor(request);
-    return (db.prepare('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE m.user_id=? ORDER BY w.personal DESC,w.name').all(user.id) as unknown as Workspace[]).map(w => ({ ...w, personal: Boolean(w.personal) }));
+
+  app.get('/api/workspaces', async c => {
+    const user = await userFor(c);
+    const rows = await db.all<Workspace>('SELECT w.id,w.name,w.owner_id AS ownerId,w.personal FROM workspaces w JOIN members m ON m.workspace_id=w.id WHERE m.user_id=? ORDER BY w.personal DESC,w.name', user.id);
+    return c.json(rows.map(w => ({ ...w, personal: Boolean(w.personal) })));
   });
-  app.post('/api/workspaces', async (request, reply) => {
-    const user = userFor(request);
-    const { name } = z.object({ name: z.string().trim().min(1).max(80) }).parse(request.body);
-    requireTeamPlan(db, user.id);
-    return reply.code(201).send(createWorkspace(user.id, name, false));
+  app.post('/api/workspaces', async c => {
+    const user = await userFor(c);
+    const { name } = await body(c, z.object({ name: z.string().trim().min(1).max(80) }));
+    await requireTeamPlan(db, user.id);
+    const team = workspaceStatements(user.id, name, false);
+    await db.batch(team.statements);
+    return c.json(team.workspace, 201);
   });
-  app.get('/api/workspaces/:id/members', async request => {
-    const { workspace } = workspaceFor(request);
-    return db.prepare("SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'member' THEN 2 ELSE 3 END,u.name").all(workspace.id);
+  app.get('/api/workspaces/:id/members', async c => {
+    const { workspace } = await workspaceFor(c);
+    return c.json(await db.all("SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'member' THEN 2 ELSE 3 END,u.name", workspace.id));
   });
-  const memberCount = (workspaceId: string) => (db.prepare('SELECT COUNT(*) AS n FROM members WHERE workspace_id=?').get(workspaceId) as { n: number }).n;
-  const roleSchema = z.enum(['admin', 'member', 'viewer']);
-  app.post('/api/workspaces/:id/invitations', async request => {
-    const { workspace, role } = workspaceFor(request);
-    const { role: invited } = z.object({ role: roleSchema.default('member') }).parse(request.body ?? {});
+  const memberCount = async (workspaceId: string) => (await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM members WHERE workspace_id=?', workspaceId))!.n;
+  const teamFull = () => new PublicError(403, `This team already has ${TEAM_MAX_MEMBERS} members, the Team plan limit.`, 'team_full');
+  app.post('/api/workspaces/:id/invitations', async c => {
+    const { workspace, role } = await workspaceFor(c);
+    const { role: invited } = await body(c, z.object({ role: roleSchema.default('member') }));
     if (workspace.personal || !canManageTeam(role)) throw new HttpError(403, 'Only the team owner or an admin can invite people.');
     if (!assignableRoles(role).includes(invited)) throw new HttpError(403, 'Only the team owner can invite admins.');
-    requireTeamPlan(db, workspace.ownerId);
-    if (memberCount(workspace.id) >= TEAM_MAX_MEMBERS) throw new PublicError(403, `This team already has ${TEAM_MAX_MEMBERS} members, the Team plan limit.`, 'team_full');
+    await requireTeamPlan(db, workspace.ownerId);
+    if (await memberCount(workspace.id) >= TEAM_MAX_MEMBERS) throw teamFull();
     const code = randomBytes(24).toString('base64url');
-    db.prepare('DELETE FROM invitations WHERE expires<=?').run(Date.now());
-    db.prepare('INSERT INTO invitations (hash,workspace_id,expires,role) VALUES (?,?,?,?)').run(hash(code), workspace.id, Date.now() + 7 * 86400_000, invited);
-    return { code, expiresInDays: 7, role: invited };
+    await db.batch([['DELETE FROM invitations WHERE expires<=?', Date.now()], ['INSERT INTO invitations (hash,workspace_id,expires,role) VALUES (?,?,?,?)', hash(code), workspace.id, Date.now() + 7 * 86400_000, invited]]);
+    return c.json({ code, expiresInDays: 7, role: invited });
   });
-  const memberParams = z.object({ id: idSchema, userId: idSchema });
   /** Checks that the actor may change this member and returns the member's current role. */
-  function manageable(request: FastifyRequest) {
-    const { workspace, role, user } = workspaceFor(request);
-    const { userId } = memberParams.parse(request.params);
-    const target = db.prepare('SELECT role FROM members WHERE workspace_id=? AND user_id=?').get(workspace.id, userId) as { role: Role } | undefined;
+  async function manageable(c: Context) {
+    const { workspace, role, user } = await workspaceFor(c);
+    const userId = idSchema.parse(c.req.param('userId'));
+    const target = await db.get<{ role: Role }>('SELECT role FROM members WHERE workspace_id=? AND user_id=?', workspace.id, userId);
     if (!target) throw new HttpError(404, 'Member not found.');
     return { workspace, role, user, userId, target: target.role };
   }
-  app.post('/api/workspaces/:id/members/:userId/role', async request => {
-    const { workspace, role, userId, target } = manageable(request);
-    const { role: next } = z.object({ role: roleSchema }).parse(request.body);
+  app.post('/api/workspaces/:id/members/:userId/role', async c => {
+    const { workspace, role, userId, target } = await manageable(c);
+    const { role: next } = await body(c, z.object({ role: roleSchema }));
     if (workspace.personal || !canChangeMember(role, target) || !assignableRoles(role).includes(next)) throw new HttpError(403, 'You cannot give this member that role.');
-    db.prepare('UPDATE members SET role=? WHERE workspace_id=? AND user_id=?').run(next, workspace.id, userId);
-    return { ok: true };
+    await db.run('UPDATE members SET role=? WHERE workspace_id=? AND user_id=?', next, workspace.id, userId);
+    return c.json({ ok: true });
   });
   // Removes a member, or lets members other than the owner leave. Their tasks stay with the team.
-  app.post('/api/workspaces/:id/members/:userId/remove', async request => {
-    const { workspace, role, user, userId, target } = manageable(request);
+  app.post('/api/workspaces/:id/members/:userId/remove', async c => {
+    const { workspace, role, user, userId, target } = await manageable(c);
     const leaving = userId === user.id && target !== 'owner';
     if (workspace.personal || (!leaving && !canChangeMember(role, target))) throw new HttpError(403, 'You cannot remove this member.');
-    db.prepare('DELETE FROM members WHERE workspace_id=? AND user_id=?').run(workspace.id, userId);
-    return { ok: true };
+    await db.run('DELETE FROM members WHERE workspace_id=? AND user_id=?', workspace.id, userId);
+    return c.json({ ok: true });
   });
-  app.post('/api/invitations/join', async request => {
-    const user = userFor(request);
-    const { code } = z.object({ code: z.string().min(20).max(100) }).parse(request.body);
-    const invite = db.prepare('SELECT workspace_id,role FROM invitations WHERE hash=? AND expires>?').get(hash(code), Date.now()) as { workspace_id: string; role: Role } | undefined;
+  app.post('/api/invitations/join', async c => {
+    const user = await userFor(c);
+    const { code } = await body(c, z.object({ code: z.string().min(20).max(100) }));
+    const invite = await db.get<{ workspace_id: string; role: Role }>('SELECT workspace_id,role FROM invitations WHERE hash=? AND expires>?', hash(code), Date.now());
     if (!invite) throw new HttpError(404, 'Invitation is invalid, expired, or already used.');
-    if (memberCount(invite.workspace_id) >= TEAM_MAX_MEMBERS) throw new PublicError(403, `This team already has ${TEAM_MAX_MEMBERS} members, the Team plan limit.`, 'team_full');
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      db.prepare('INSERT OR IGNORE INTO members VALUES (?,?,?)').run(invite.workspace_id, user.id, invite.role);
-      db.prepare('DELETE FROM invitations WHERE hash=?').run(hash(code));
-      db.exec('COMMIT');
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
-    return { workspaceId: invite.workspace_id };
+    if (await memberCount(invite.workspace_id) >= TEAM_MAX_MEMBERS) throw teamFull();
+    // Deleting first makes the code single use even when two people redeem it at the same moment.
+    if (!await db.run('DELETE FROM invitations WHERE hash=?', hash(code))) throw new HttpError(404, 'Invitation is invalid, expired, or already used.');
+    await db.run('INSERT OR IGNORE INTO members VALUES (?,?,?)', invite.workspace_id, user.id, invite.role);
+    return c.json({ workspaceId: invite.workspace_id });
   });
-  app.post('/api/workspaces/:id/sync', async request => {
-    const { workspace, role, user } = workspaceFor(request);
-    const { mutations } = syncSchema.parse(request.body);
+
+  app.post('/api/workspaces/:id/sync', async c => {
+    const { workspace, role, user } = await workspaceFor(c);
+    const { mutations } = await body(c, syncSchema);
     if (new Set(mutations.map(m => m.id)).size !== mutations.length) throw new HttpError(400, 'Duplicate record IDs.');
+    const members = new Set((await db.all<{ user_id: string }>('SELECT user_id FROM members WHERE workspace_id=?', workspace.id)).map(m => m.user_id));
     for (const mutation of mutations) {
       const data = mutation.data;
       if (!data) continue;
       recordSchema.parse(data);
       // Audio blobs and their device-specific database references remain local.
       delete data.audioId;
-      if (data.id !== mutation.id || !['task', 'note', 'habit', 'voice','conversation'].includes(String(data.kind))) throw new HttpError(400, 'Unsupported record. Device security settings cannot be synced.');
+      if (data.id !== mutation.id || !['task', 'note', 'habit', 'voice', 'conversation'].includes(String(data.kind))) throw new HttpError(400, 'Unsupported record. Device security settings cannot be synced.');
       if (JSON.stringify(data).length > 100_000) throw new HttpError(400, 'Record is too large.');
-      if (data.assigneeId && !db.prepare('SELECT user_id FROM members WHERE workspace_id=? AND user_id=?').get(workspace.id, String(data.assigneeId))) throw new HttpError(400, 'Assignee must be a workspace member.');
+      if (data.assigneeId && !members.has(String(data.assigneeId))) throw new HttpError(400, 'Assignee must be a workspace member.');
     }
-    // Changes the member's role does not allow are rejected; the app restores the stored version.
-    const conflicts: string[] = [], rejected: string[] = [];
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      for (const mutation of mutations) {
-        const existing = db.prepare('SELECT version,data,deleted,created_by FROM records WHERE workspace_id=? AND id=?').get(workspace.id, mutation.id) as { version: number; data: string | null; deleted: number; created_by: string | null } | undefined;
-        const serialized = mutation.data ? JSON.stringify(mutation.data) : null;
-        // An identical retry is already applied, including when the previous response was lost.
-        if (existing && existing.data === serialized && Boolean(existing.deleted) === (mutation.data === null)) continue;
-        if (!workspace.personal && !canWrite(role, user.id, existing ? { createdBy: existing.created_by, data: existing.data ? JSON.parse(existing.data) : null } : null, mutation.data)) { rejected.push(mutation.id); continue; }
-        if ((existing?.version ?? 0) !== mutation.expectedVersion) { conflicts.push(mutation.id); continue; }
-        db.prepare('INSERT INTO records (workspace_id,id,version,deleted,data,created_by) VALUES (?,?,?,?,?,?) ON CONFLICT(workspace_id,id) DO UPDATE SET version=excluded.version,deleted=excluded.deleted,data=excluded.data').run(workspace.id, mutation.id, (existing?.version ?? 0) + 1, Number(mutation.data === null), serialized, existing ? existing.created_by : user.id);
-      }
-      db.exec('COMMIT');
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
-    const records: CloudRecord[] = db.prepare('SELECT id,version,deleted,data FROM records WHERE workspace_id=?').all(workspace.id).map(row => ({ id: String(row.id), version: Number(row.version), deleted: Boolean(row.deleted), data: row.data ? JSON.parse(String(row.data)) : null }));
-    return { records, conflicts, rejected };
+    type Stored = { id: string; version: number; data: string | null; deleted: number; created_by: string | null };
+    const stored = new Map<string, Stored>();
+    for (const ids of chunks(mutations.map(m => m.id), 90)) { // D1 allows at most 100 bound parameters per query.
+      for (const row of await db.all<Stored>(`SELECT id,version,data,deleted,created_by FROM records WHERE workspace_id=? AND id IN (${ids.map(() => '?').join(',')})`, workspace.id, ...ids)) stored.set(row.id, row);
+    }
+    // Changes the member's role does not allow are rejected; the app restores the stored version. Each write only
+    // applies if the stored version is still the one checked here, so concurrent syncs turn into conflicts.
+    const conflicts: string[] = [], rejected: string[] = [], writes: { id: string; statement: Statement }[] = [];
+    for (const mutation of mutations) {
+      const existing = stored.get(mutation.id);
+      const serialized = mutation.data ? JSON.stringify(mutation.data) : null, deleted = Number(mutation.data === null);
+      // An identical retry is already applied, including when the previous response was lost.
+      if (existing && existing.data === serialized && Boolean(existing.deleted) === (mutation.data === null)) continue;
+      if (!workspace.personal && !canWrite(role, user.id, existing ? { createdBy: existing.created_by, data: existing.data ? JSON.parse(existing.data) : null } : null, mutation.data)) { rejected.push(mutation.id); continue; }
+      if ((existing?.version ?? 0) !== mutation.expectedVersion) { conflicts.push(mutation.id); continue; }
+      writes.push({ id: mutation.id, statement: existing
+        ? ['UPDATE records SET version=version+1,deleted=?,data=? WHERE workspace_id=? AND id=? AND version=?', deleted, serialized, workspace.id, mutation.id, existing.version]
+        : ['INSERT INTO records (workspace_id,id,version,deleted,data,created_by) VALUES (?,?,1,?,?,?) ON CONFLICT(workspace_id,id) DO NOTHING', workspace.id, mutation.id, deleted, serialized, user.id] });
+    }
+    const changed = await db.batch(writes.map(w => w.statement));
+    writes.forEach((w, i) => { if (!changed[i]) conflicts.push(w.id); });
+    const rows = await db.all<{ id: string; version: number; deleted: number; data: string | null }>('SELECT id,version,deleted,data FROM records WHERE workspace_id=?', workspace.id);
+    const records: CloudRecord[] = rows.map(row => ({ id: String(row.id), version: Number(row.version), deleted: Boolean(row.deleted), data: row.data ? JSON.parse(String(row.data)) : null }));
+    return c.json({ records, conflicts, rejected });
   });
-  databases.set(app, db);
+
+  // Owner-only maintenance for npm run plan, enabled by setting ADMIN_TOKEN on the server.
+  function requireAdmin(c: Context) {
+    const expected = process.env.ADMIN_TOKEN ?? '', given = c.req.header('authorization')?.replace(/^Bearer /, '') ?? '';
+    if (expected.length < 32 || !timingSafeEqual(Buffer.from(hash(given)), Buffer.from(hash(expected)))) throw new HttpError(404, 'Not found.');
+  }
+  app.get('/api/admin/plans', limit('admin', 30), async c => { requireAdmin(c); return c.json(await listPlans(db)); });
+  app.post('/api/admin/plans', limit('admin', 30), async c => {
+    requireAdmin(c);
+    const input = await body(c, z.object({ email: z.string().email(), plan: z.enum(['free', 'personal', 'team']), months: z.number().int().min(1).max(36).default(1) }));
+    return c.json(await setPlan(db, input.email, input.plan, input.months));
+  });
   return app;
 }

@@ -91,8 +91,10 @@ test('Expo interface creates and persists tasks, undo, notes, habits, commands a
 test('assistant previews suggestions, applies once, supports undo and preserves failed messages',async ({ page }) => {
   test.setTimeout(120000);
   await page.context().grantPermissions(['microphone']);
-  await page.route('**/api/assistant/transcribe',async route => {
-    expect(route.request().postDataJSON().audio.length).toBeGreaterThan(4);
+  await page.route('**/api/assistant/transcribe?*',async route => {
+    // The recording travels as the raw request body, with its format and language in the query.
+    expect(route.request().postDataBuffer()!.length).toBeGreaterThan(4);
+    expect(new URL(route.request().url()).searchParams.get('format')).toMatch(/^(webm|m4a)$/);
     await route.fulfill({ json:{ text:'My recorded request' } });
   });
   await page.route('**/api/assistant/status',route => route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
@@ -155,7 +157,7 @@ test('Expo account sync isolates device records and imports explicitly',async ({
 test('one recording becomes several reviewed tasks in the right matrix boxes',async ({ page }) => {
   test.setTimeout(120000);
   await page.context().grantPermissions(['microphone']);
-  await page.route('**/api/assistant/transcribe',route => route.fulfill({ json:{ text:'ابعت عرض اتصالات النهاردة وتابع مع هشام الأربع واحجز الطيران وكلم البنك' } }));
+  await page.route('**/api/assistant/transcribe?*',route => route.fulfill({ json:{ text:'ابعت عرض اتصالات النهاردة وتابع مع هشام الأربع واحجز الطيران وكلم البنك' } }));
   await page.route('**/api/assistant/status',route => route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
   let intent = '';
   await page.route('**/api/assistant/chat',route => { intent = route.request().postDataJSON().intent; return route.fulfill({ json:{ reply:'I found 4 tasks.',actions:[
@@ -250,7 +252,7 @@ test('leaving the app while recording keeps the recording, and unsaved tasks sur
   test.setTimeout(120000);
   await page.context().grantPermissions(['microphone']);
   let uploads = 0;
-  await page.route('**/api/assistant/transcribe',route => ++uploads === 1 ? route.fulfill({ status:503,json:{ error:'Transcription is busy. Try again.' } }) : route.fulfill({ json:{ text:'Call the dentist tomorrow' } }));
+  await page.route('**/api/assistant/transcribe?*',route => ++uploads === 1 ? route.fulfill({ status:503,json:{ error:'Transcription is busy. Try again.' } }) : route.fulfill({ json:{ text:'Call the dentist tomorrow' } }));
   await page.route('**/api/assistant/status',route => route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
   await page.route('**/api/assistant/chat',route => route.fulfill({ json:{ reply:'I found 1 task.',actions:[{ type:'add_task',title:'Call the dentist',due:null,time:null,targetId:null,priority:2 }] } }));
   await registerVoiceUser(page,'kept');
