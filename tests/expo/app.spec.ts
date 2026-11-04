@@ -285,10 +285,11 @@ test('opening the old address carries this device\'s old items and PIN to the ne
     localStorage.setItem('mypa_expo_v1',JSON.stringify({scopes:{guest:{records:{note_old:{id:'note_old',kind:'note',type:'note',text:'Old offline note'}},baseline:{},conflicts:[]}},language:'en',focusEnd:null}));
     localStorage.setItem('mypa_pin',pin); },oldPin);
   await page.route('https://adeltaha123.github.io/**',route=>route.fulfill({ contentType:'text/html', body:readFileSync('deploy/github-pages/index.html','utf8') }));
-  let forwarded='';
-  await page.route('https://mypa-api.mohamed-tamer.workers.dev/**',route=>{ forwarded=route.request().url(); return route.fulfill({ body:'new address' }); });
+  await page.route('https://mypa-api.mohamed-tamer.workers.dev/**',route=>route.fulfill({ contentType:'text/html', body:'new address' }));
   await page.goto('https://adeltaha123.github.io/Adel-Taha/');
-  await expect.poll(()=>forwarded).toContain('#transfer=');
+  // The #fragment is never part of a network request, so it is read from the address bar after forwarding.
+  await page.waitForURL(/^https:\/\/mypa-api\.mohamed-tamer\.workers\.dev\/#transfer=/);
+  const forwarded=page.url();
   // The new app, opened with what the old address handed over. This browser has no PIN yet, so the old one applies.
   await page.addInitScript(()=>{ if(location.port==='5188'&&!sessionStorage.getItem('transfer_test')){ sessionStorage.setItem('transfer_test','1'); localStorage.removeItem('mypa_pin'); sessionStorage.removeItem('mypa_unlocked_at'); } });
   await page.goto('/'+new URL(forwarded).hash);
