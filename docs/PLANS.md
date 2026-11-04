@@ -41,3 +41,14 @@ Connecting real payments later: phone apps must sell subscriptions through Apple
 Every member except the owner can leave a team. A removed member's tasks stay with the team.
 
 The server records who created each team record. Records from before roles existed have no creator, and any member may edit them. A change the role does not allow is returned in the sync response's `rejected` list; the app puts back the team's version and explains why, so the change is not retried forever. A viewer sees a notice at the top of the app.
+
+## Super admin panel
+
+Accounts marked as super admin (`users.is_admin`, currently mohamedtamer203@gmail.com) see **Super admin panel** on the Account screen:
+
+- **Overview:** accounts, activity, plan counts, and this month's OpenAI requests, tokens, audio minutes and estimated cost.
+- **Users:** search; each account's plan, promo code, AI usage and cost, join date and last activity. Set a plan and months, reset the month's AI count, set a new password (signs the account out everywhere), make or remove super admin, disable or enable. Passwords are one-way hashes and can only be replaced, never shown. A super admin cannot disable or demote themselves.
+- **Promo codes:** a percentage off one plan or any plan, with an optional use limit and expiry. Users enter codes on the Account screen and see the discounted price; the admin sees the code next to the user when activating the plan.
+- **Settings:** the free AI allowance, plan prices, who to contact to subscribe, and the OpenAI prices used to estimate cost.
+
+Token counts and costs are recorded from each successful request since this was added; earlier requests only have monthly counts. Join dates and "last active" are recorded from now on as well. The same admin API accepts `ADMIN_TOKEN`, which `npm run plan` uses.
