@@ -5,6 +5,8 @@ import { createApi } from './node.js';
 const api = await createApi({
   databasePath: process.env.API_DB ?? 'data/my-pa.sqlite',
   origins: process.env.API_ORIGINS?.split(',').map(value => value.trim()),
+  // Browser tests sign up many accounts from one address; only their test server turns the limits off.
+  rateLimit: process.env.API_RATE_LIMIT !== 'off',
 });
 const hostname = process.env.API_HOST ?? '127.0.0.1', port = Number(process.env.API_PORT ?? 3001);
 const server = serve({ fetch: api.fetch, hostname, port }, info => console.log(`My PA API listening at http://${info.address}:${info.port}`));
