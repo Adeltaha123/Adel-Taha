@@ -1,10 +1,11 @@
 import { useEffect,useRef,useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Pressable, Text, View } from 'react-native';
 import type { Task } from '../../../shared/domain';
-import { checkInTime, scheduleKey, moveToTomorrow, checkInMessage } from '../../../shared/checkins';
+import { checkInTime, scheduleKey, moveToTomorrow } from '../../../shared/checkins';
+import { dayKey } from '../../../shared/productivity';
 import { put,useStore } from '../data/store';
 import { enableReminders,onCheckInResponse,scheduleCheckIns,type CheckInAction,type CheckInResponse } from '../platform/notifications';
-import { Button,Card,Label,styles,useText } from '../app/ui';
+import { Button,Icon,Label,useText,useTheme } from '../app/ui';
 const SNOOZE_MS=30*60_000;
 /** Applies a check-in answer to its task; the same choices appear on the notification and in the app. */
 function answer(task:Task,action:Exclude<CheckInAction,'open'>|'dismiss') {
@@ -14,7 +15,7 @@ function answer(task:Task,action:Exclude<CheckInAction,'open'>|'dismiss') {
   else put({...task,checkInDismissedFor:scheduleKey(task)});
 }
 export function CheckIns() {
-  const s=useStore(),t=useText(),[now,setNow]=useState(Date.now()),[status,setStatus]=useState('');
+  const s=useStore(),t=useText(),c=useTheme(),[now,setNow]=useState(Date.now()),[status,setStatus]=useState('');
   const tasks=Object.values(s.records).filter(r=>r.kind==='task') as unknown as Task[];
   const latest=useRef({records:s.records,scope:s.scope});latest.current={records:s.records,scope:s.scope};
   const name=s.session?.user.name ?? '';
@@ -34,12 +35,36 @@ export function CheckIns() {
   }
   useEffect(()=>onCheckInResponse(response=>{pending.current.push(response);apply();}),[]);
   useEffect(apply,[s.scope,s.records]);
-  const due=tasks.find(task=>{const at=checkInTime(task);return at!==null&&at<=now;});
-  return <View style={{paddingHorizontal:22,gap:8}}>{due&&<Card><Label>{checkInMessage(due,'followup',now,s.language,name).title}</Label><Label big>{checkInMessage(due,'followup',now,s.language,name).body}</Label><View style={styles.row}>
-    <Button title={t('✅ Done','✅ تمّت')} onPress={()=>answer(due,'done')}/>
-    <Button title={t('⏰ In 30 min','⏰ بعد ٣٠ دقيقة')} secondary onPress={()=>answer(due,'snooze')}/>
-    <Button title={t('📅 Tomorrow','📅 بكرة')} secondary onPress={()=>answer(due,'tomorrow')}/>
-    <Button title={t('Dismiss','إغلاق')} secondary onPress={()=>answer(due,'dismiss')}/></View></Card>}{!!status&&<Label>{status}</Label>}</View>;
+  // Tasks whose time has come, earliest first; one compact strip at a time, the next appears after an answer.
+  const waiting=tasks.map(task=>({task,at:checkInTime(task)})).filter((v):v is {task:Task;at:number}=>v.at!==null&&v.at<=now).sort((a,b)=>a.at-b.at);
+  const due=waiting[0]?.task;
+  if(!due) return status?<View style={{paddingHorizontal:20}}><Label small>{status}</Label></View>:null;
+  const today=dayKey(), ar=s.language==='ar', overdue=!!due.due&&due.due<today;
+  const when=overdue
+    ? t(`Overdue since ${new Date(`${due.due}T12:00:00`).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,`متأخرة من ${new Date(`${due.due}T12:00:00`).toLocaleDateString('ar-EG',{day:'numeric',month:'short'})}`)
+    : due.time ? t(`Today ${due.time} · done?`,`النهاردة ${due.time} · خلّصتها؟`) : t('Today · done?','النهاردة · خلّصتها؟');
+  const pill=(label:string,onPress:()=>void,primary=false,a11y?:string)=><Pressable accessibilityRole="button" accessibilityLabel={a11y??label} onPress={onPress} hitSlop={4}
+    style={({pressed})=>({height:32,paddingHorizontal:12,borderRadius:16,justifyContent:'center',backgroundColor:primary?c.accent:c.sunk,opacity:pressed?0.75:1})}>
+    <Text style={{fontSize:13,fontWeight:'700',color:primary?c.onAccent:c.ink}}>{label}</Text></Pressable>;
+  return <View style={{paddingHorizontal:20,paddingBottom:6}}>
+    <View accessibilityRole="summary" style={{flexDirection:'row',gap:10,backgroundColor:c.surface,borderWidth:1,borderColor:overdue?c.q[1]:c.line,borderRadius:16,padding:10}}>
+      <View style={{width:4,borderRadius:2,backgroundColor:c.q[due.q||2]}}/>
+      <View style={{flex:1,gap:8}}>
+        <View style={{flexDirection:'row',alignItems:'flex-start',gap:8}}>
+          <View style={{flex:1}}>
+            <Text numberOfLines={1} style={{fontSize:15,fontWeight:'700',color:c.ink,textAlign:ar?'right':'left'}}>{due.title}</Text>
+            <Text numberOfLines={1} style={{fontSize:12,color:overdue?c.q[1]:c.muted,textAlign:ar?'right':'left'}}>{when}{waiting.length>1?t(` · 1 of ${waiting.length}`,` · ١ من ${waiting.length}`):''}</Text>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Dismiss','إغلاق')} onPress={()=>answer(due,'dismiss')} hitSlop={10} style={{padding:2}}><Icon name="close" size={16} color={c.faint} width={2}/></Pressable>
+        </View>
+        <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
+          {pill(t('✓ Done','✓ تمّت'),()=>answer(due,'done'),true,t('Done','تمّت'))}
+          {pill(t('⏰ 30 min','⏰ ٣٠ دقيقة'),()=>answer(due,'snooze'),false,t('In 30 min','بعد ٣٠ دقيقة'))}
+          {pill(t('📅 Tomorrow','📅 بكرة'),()=>answer(due,'tomorrow'),false,t('Tomorrow','بكرة'))}
+        </View>
+      </View>
+    </View>
+  </View>;
 }
 export function ReminderPermission() {
   const t=useText(),[status,setStatus]=useState(''),s=useStore();

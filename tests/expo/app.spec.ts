@@ -38,8 +38,10 @@ test('login, picked schedule, check-in and database autosave work together',asyn
   await page.getByRole('button',{name:/^\d{4}-\d{2}-01$/}).click();
   await page.getByRole('button',{name:'09:00',exact:true}).click();await page.getByRole('button',{name:'00',exact:true}).first().click();await page.getByRole('button',{name:'Set time',exact:true}).click();
   await page.getByRole('button',{name:'Save task',exact:true}).click();
-  await expect(page.getByRole('button',{name:'⏰ In 30 min',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'⏰ In 30 min',exact:true}).click();await expect(page.getByRole('button',{name:'⏰ In 30 min',exact:true})).toHaveCount(0);
+  // The compact check-in strip: title, when it was due, and Done / 30 min / Tomorrow.
+  await expect(page.getByRole('button',{name:'In 30 min',exact:true})).toBeVisible();
+  await page.screenshot({path:'mobile/.expo/preview-checkin.png'});
+  await page.getByRole('button',{name:'In 30 min',exact:true}).click();await expect(page.getByRole('button',{name:'In 30 min',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Complete',exact:true}).click();
   const auth=await page.request.post('http://127.0.0.1:3012/api/auth/login',{data:{email,password}});const token=(await auth.json()).token;
   const headers={authorization:`Bearer ${token}`};const workspaces=await(await page.request.get('http://127.0.0.1:3012/api/workspaces',{headers})).json();
@@ -365,6 +367,7 @@ test('typed quick-add text is understood like a voice note when signed in, and s
   await expect(page.getByRole('button',{name:'Save all 2 tasks',exact:true})).toBeVisible();
   expect(sent).toBe('call ahmed tomorrow at 10 and send the offer');
   await page.getByRole('button',{name:'Save all 2 tasks',exact:true}).click();
-  await expect(page.getByText('Call Ahmed',{exact:true})).toBeVisible();
+  // The saved tasks are on the board (one is also in the check-in strip when its time has come).
+  await expect(page.getByText('Call Ahmed',{exact:true}).last()).toBeVisible();
   await expect(page.getByText('Send the offer',{exact:true})).toBeVisible();
 });
