@@ -39,7 +39,8 @@ export function Assistant() {
   }
   function speak(m:Message) {
     void Speech.stop().then(() => { if (speaking === m.id) { setSpeaking(null); return; } setSpeaking(m.id);
-      Speech.speak(m.content,{ language:s.language === 'ar' ? 'ar' : 'en',onDone:() => setSpeaking(null),onStopped:() => setSpeaking(null),onError:() => { setSpeaking(null); setError(t('Speech playback is unavailable on this device.','القراءة الصوتية غير متاحة على هذا الجهاز.')); } }); });
+      // Replies follow the user's language rather than the app's, so the voice follows the reply's script.
+      Speech.speak(m.content,{ language:/[؀-ۿ]/.test(m.content) ? 'ar' : 'en',onDone:() => setSpeaking(null),onStopped:() => setSpeaking(null),onError:() => { setSpeaking(null); setError(t('Speech playback is unavailable on this device.','القراءة الصوتية غير متاحة على هذا الجهاز.')); } }); });
   }
   const enabled = reason === null;
   return <View style={{ flex:1 }}><ScrollView ref={scroll} keyboardShouldPersistTaps="handled" onContentSizeChange={() => { if (error) scroll.current?.scrollTo({y:0,animated:true}); else if (messages.length) scroll.current?.scrollToEnd({ animated:true }); }} contentContainerStyle={styles.content}>
