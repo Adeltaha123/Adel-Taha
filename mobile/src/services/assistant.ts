@@ -1,12 +1,12 @@
 import {api,apiUpload,origin} from '../data/store';
 import type {Language} from '../../../shared/domain';
-import type {AssistantReply} from '../../../shared/assistant';
+import type {AssistantReply,ContextTask} from '../../../shared/assistant';
 import {dayKey} from '../../../shared/productivity';
 import {recordingUpload} from '../platform/voice';
 /** Uploads a finished recording file and returns its text. */
 export async function transcribe(uri:string,language:Language,signal:AbortSignal){const {format,upload}=await recordingUpload(uri);return apiUpload<{text:string}>('/assistant/transcribe?format='+format+'&language='+language,upload,55000,signal);}
-/** Splits one dictation into up to 20 prioritized task proposals. */
-export const understandTasks=(message:string,language:Language,signal?:AbortSignal,assistantName='')=>api<AssistantReply>('/assistant/chat',{message,language,today:dayKey(),tasks:[],history:[],intent:'tasks',...(assistantName?{assistantName}:{})},90000,signal);
+/** Splits one dictation into up to 20 prioritized task proposals; the existing tasks let the reply warn about clashes. */
+export const understandTasks=(message:string,language:Language,signal?:AbortSignal,assistantName='',tasks:ContextTask[]=[])=>api<AssistantReply>('/assistant/chat',{message,language,today:dayKey(),tasks,history:[],intent:'tasks',...(assistantName?{assistantName}:{})},90000,signal);
 /** Resolves to null when voice and AI are ready, otherwise to a message that says what is missing. */
 export async function voiceStatus(signedIn:boolean,t:(en:string,ar:string)=>string):Promise<string|null> {
   if(!signedIn)return t('Sign in from Account to turn on voice and AI. You can still type and save tasks.','سجّل الدخول من الحساب لتفعيل الصوت والذكاء الاصطناعي. يمكنك كتابة المهام وحفظها الآن.');

@@ -2,9 +2,9 @@ import {useEffect,useRef,useState} from 'react';
 import {Modal,ScrollView,View,Text,ActivityIndicator,TextInput,Pressable} from 'react-native';
 import {randomUUID} from 'expo-crypto';
 import type {AssistantAction} from '../../../../shared/assistant';
-import {proposedRecord} from '../../../../shared/assistant';
+import {contextTasks,proposedRecord} from '../../../../shared/assistant';
 import {clashWarning,scheduleClashes} from '../../../../shared/conflicts';
-import {boardQuadrant} from '../../../../shared/productivity';
+import {boardQuadrant,dayKey} from '../../../../shared/productivity';
 import type {Task} from '../../../../shared/domain';
 import {change,loadVoiceDraft,saveVoiceDraft,useStore} from '../../data/store';
 import {understandTasks,voiceStatus} from '../../services/assistant';
@@ -33,7 +33,7 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
   const available=reason===null;
   async function interpret(value:string,signal?:AbortSignal){
     setText(value);setError('');setReply('');setDrafts([]);if(!value.trim())return;setBusy(true);
-    try{const result=await understandTasks(value,s.language,signal,s.assistantName);if(!alive.current||signal?.aborted)return;
+    try{const result=await understandTasks(value,s.language,signal,s.assistantName,contextTasks(Object.values(s.records),dayKey()));if(!alive.current||signal?.aborted)return;
       const found=result.actions.filter(a=>a.type==='add_task').map(a=>({...a,key:randomUUID()}));
       setDrafts(found);if(found.length)setReply(result.reply);else setError(result.reply);
     }catch(e){if(alive.current&&!signal?.aborted)setError(e instanceof Error?e.message:String(e));}finally{if(alive.current)setBusy(false);}
@@ -65,7 +65,7 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
     {drafts.length>0&&<View style={{gap:12}}>
       <View style={[styles.row,{justifyContent:'space-between'}]}><Eyebrow>{t(`${drafts.length} TASK${drafts.length===1?'':'S'} READY`,`${drafts.length} مهام جاهزة`)}</Eyebrow><Pressable accessibilityRole="button" onPress={()=>{setDrafts([]);setReply('');setRestored(false);}}><Text style={{color:c.accent,fontWeight:'600'}}>{t('Start over','ابدأ من جديد')}</Text></Pressable></View>
       {!!reply&&<Label small>{reply}</Label>}
-      {clashCount>0&&<Notice>{t(clashCount===1?'One of these clashes with your schedule. Check the warning below.':`${clashCount} of these clash with your schedule. Check the warnings below.`,clashCount===1?'واحدة من دول متعارضة مع مواعيدك. شوف التنبيه تحت.':`${clashCount} منهم متعارضين مع مواعيدك. شوف التنبيهات تحت.`)}</Notice>}
+      {clashCount>0&&<Notice tone="error">{t(clashCount===1?'One of these clashes with your schedule. Check the warning below.':`${clashCount} of these clash with your schedule. Check the warnings below.`,clashCount===1?'واحدة من دول متعارضة مع مواعيدك. شوف التنبيه تحت.':`${clashCount} منهم متعارضين مع مواعيدك. شوف التنبيهات تحت.`)}</Notice>}
       {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===boardQuadrant({q:d.priority,due:d.due}))??QUADRANTS[1]!,expanded=open===d.key,clash=clashes.get(d.key);
         return <View key={d.key} style={{backgroundColor:c.surface,borderRadius:18,borderWidth:1,borderColor:c.line,overflow:'hidden'}}>
           <View style={{height:4,backgroundColor:c.q[q.q]}}/>
@@ -76,7 +76,7 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
             <View style={[styles.row,{gap:6}]}>
               {QUADRANTS.map(x=>{const on=x.q===q.q;return <Pressable key={x.q} accessibilityRole="button" accessibilityState={{selected:on}} accessibilityLabel={t(x.en,x.ar)} onPress={()=>edit(d.key,{priority:x.q})} style={{paddingHorizontal:10,paddingVertical:5,borderRadius:999,borderWidth:1,borderColor:on?c.q[x.q]:c.line,backgroundColor:on?c.q[x.q]:'transparent'}}><Text style={{fontSize:12,fontWeight:'700',color:on?'#fff':c.muted}}>{t(x.en,x.ar)}</Text></Pressable>;})}</View>
             <Pressable accessibilityRole="button" onPress={()=>setOpen(expanded?null:d.key)}><Text style={{fontSize:13,fontWeight:'600',color:d.due?c.accent:c.muted}}>{d.due?`📅 ${d.due}${d.time?` · ${d.time}`:''}`:t('+ Add a date','+ أضف موعداً')}</Text></Pressable>
-            {!!clash&&<Text accessibilityRole="alert" style={{fontSize:13,fontWeight:'600',color:c.q[1]}}>{clash}</Text>}
+            {!!clash&&<Notice tone="error">{clash}</Notice>}
             {expanded&&<SchedulePicker due={d.due} time={d.time} onChange={(due,time)=>edit(d.key,{due,time})}/>}
           </View></View>;})}
       <Button icon="check" title={drafts.length===1?t('Save this task','حفظ هذه المهمة'):t(`Save all ${drafts.length} tasks`,`حفظ كل المهام (${drafts.length})`)} disabled={!drafts.some(d=>d.title.trim())} onPress={()=>saveAll(drafts)}/>

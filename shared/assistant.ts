@@ -8,6 +8,19 @@ export interface AssistantAction {
   priority?: number | null;
 }
 export interface AssistantReply { reply:string; actions:AssistantAction[] }
+export type ContextTask = { id:string; title:string; done:boolean; due:string|null; time:string|null; q:number };
+/**
+ * The workspace tasks sent with a message (at most 50), with their dates and times so the assistant can warn about
+ * clashes: open tasks from today on come first, soonest first, then other open tasks, then finished ones.
+ */
+export function contextTasks(records:Array<Record<string, unknown>>, today:string, max = 50):ContextTask[] {
+  const rank = (r:Record<string, unknown>) => r.done ? 2 : typeof r.due === 'string' && r.due >= today ? 0 : 1;
+  const when = (r:Record<string, unknown>) => `${typeof r.due === 'string' ? r.due : '9999'} ${typeof r.time === 'string' ? r.time : '99'}`;
+  return records.filter(r => r.kind === 'task' && typeof r.id === 'string' && typeof r.title === 'string')
+    .sort((a, b) => rank(a) - rank(b) || when(a).localeCompare(when(b))).slice(0, max)
+    .map(r => ({ id:String(r.id), title:String(r.title).slice(0, 500), done:!!r.done, due:typeof r.due === 'string' && r.due ? r.due : null,
+      time:typeof r.time === 'string' && r.time ? r.time : null, q:([1, 2, 3, 4] as const).find(q => q === r.q) ?? 2 }));
+}
 
 /** Convert an explicitly approved proposal to the existing record contracts. */
 export function proposedRecord(action:AssistantAction,id:string,created:number):import('./domain.js').Task|import('./domain.js').Note {
