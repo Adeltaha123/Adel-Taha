@@ -3,6 +3,7 @@ import { Modal, ScrollView, View, Pressable, Text, TextInput } from 'react-nativ
 import { randomUUID } from 'expo-crypto';
 import type { Task } from '../../../../shared/domain';
 import { validDay, dayKey } from '../../../../shared/productivity';
+import { clashWarning, scheduleClashes } from '../../../../shared/conflicts';
 import { put, remove, useStore } from '../../data/store';
 import { Button, Chip, Field, Icon, IconButton, Label, Notice, Page, styles, useText, useTheme } from '../../app/ui';
 import { SchedulePicker } from './SchedulePicker';
@@ -101,6 +102,8 @@ export function Tasks({ onVoice, onAnalyze }: { onVoice:()=>void; onAnalyze:(tex
 function TaskEditor({ task,close }: { task:Task; close:()=>void }) {
   const t = useText(), state = useStore();
   const [draft,setDraft] = useState<Task>({ ...task,items:task.items ?? [] }), [error,setError] = useState(''), [step,setStep] = useState(''), [confirm,setConfirm] = useState(false);
+  // Warns, without blocking, when the chosen time is the same as or within an hour of another open task.
+  const clash = clashWarning(scheduleClashes(draft,Object.values(state.records).filter(r => r.kind === 'task') as unknown as Task[]),state.language);
   function save() {
     if (!draft.title.trim() || draft.title.trim().length > 500) return setError(t('Use a title of 1–500 characters.','اكتب عنواناً من ١ إلى ٥٠٠ حرف.'));
     if (draft.due && !validDay(draft.due)) return setError(t('Use a real date: YYYY-MM-DD.','أدخل تاريخاً صحيحاً: YYYY-MM-DD.'));
@@ -111,6 +114,7 @@ function TaskEditor({ task,close }: { task:Task; close:()=>void }) {
     <Label big>{t('Task details','تفاصيل المهمة')}</Label><Field label={t('Title','العنوان')} value={draft.title} onChangeText={title => setDraft({ ...draft,title })} maxLength={500}/>
     <Field label={t('Details','التفاصيل')} value={draft.details ?? ''} onChangeText={details => setDraft({ ...draft,details })} multiline/>
     <SchedulePicker due={draft.due} time={draft.time} onChange={(due,time) => setDraft({...draft,due,time,checkInAfter:undefined,checkInDismissedFor:undefined})}/>
+    {!!clash && <Notice tone="error">{clash}</Notice>}
     {!!draft.due && <ReminderPermission/>}
     <Label>{t('Priority','الأولوية')}</Label>
     <View style={styles.row}>{QUADRANTS.map(x => <Chip key={x.q} title={t(x.en,x.ar)} active={draft.q === x.q} onPress={() => setDraft({ ...draft,q:x.q })}/>)}</View>

@@ -371,3 +371,22 @@ test('typed quick-add text is understood like a voice note when signed in, and s
   await expect(page.getByText('Call Ahmed',{exact:true}).last()).toBeVisible();
   await expect(page.getByText('Send the offer',{exact:true})).toBeVisible();
 });
+test('tasks at the same time or within an hour of another get a clash warning, in the review and in the editor',async({page})=>{
+  test.setTimeout(120000);
+  await page.route('**/api/assistant/status',route=>route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
+  await page.route('**/api/assistant/chat',route=>route.fulfill({ json:{ reply:'I found 2 tasks.',actions:[
+    { type:'add_task',title:'Call Ahmed',due:'2027-03-01',time:'10:00',targetId:null,priority:1 },
+    { type:'add_task',title:'Meeting with Hala',due:'2027-03-01',time:'10:30',targetId:null,priority:2 }] } }));
+  await registerVoiceUser(page,'clash');
+  await page.getByRole('button',{name:'Tasks',exact:true}).click();
+  await page.getByLabel('Quick add a task',{exact:true}).fill('call ahmed at 10 and meeting with hala at 10:30 on march 1');
+  await page.getByRole('button',{name:'Add',exact:true}).click();
+  await expect(page.getByText('2 of these clash with your schedule. Check the warnings below.',{exact:true})).toBeVisible();
+  await expect(page.getByText('⚠️ 30 min from “Meeting with Hala” (10:30)',{exact:true})).toBeVisible();
+  await expect(page.getByText('⚠️ 30 min from “Call Ahmed” (10:00)',{exact:true})).toBeVisible();
+  await page.screenshot({ path:'mobile/.expo/preview-clash.png' });
+  await page.getByRole('button',{name:'Save all 2 tasks',exact:true}).click();
+  // The editor warns too when the chosen time is close to another task.
+  await page.getByRole('button',{name:'Edit',exact:true}).filter({ hasText:'Call Ahmed' }).first().click();
+  await expect(page.getByText('⚠️ 30 min from “Meeting with Hala” (10:30)',{exact:true})).toBeVisible();
+});

@@ -3,6 +3,8 @@ import {Modal,ScrollView,View,Text,ActivityIndicator,TextInput,Pressable} from '
 import {randomUUID} from 'expo-crypto';
 import type {AssistantAction} from '../../../../shared/assistant';
 import {proposedRecord} from '../../../../shared/assistant';
+import {clashWarning,scheduleClashes} from '../../../../shared/conflicts';
+import type {Task} from '../../../../shared/domain';
 import {change,loadVoiceDraft,saveVoiceDraft,useStore} from '../../data/store';
 import {understandTasks,voiceStatus} from '../../services/assistant';
 import {VoiceInput} from '../VoiceInput';
@@ -36,6 +38,11 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
     }catch(e){if(alive.current&&!signal?.aborted)setError(e instanceof Error?e.message:String(e));}finally{if(alive.current)setBusy(false);}
   }
   const edit=(key:string,patch:Partial<Draft>)=>setDrafts(list=>list.map(d=>d.key===key?{...d,...patch}:d));
+  // Each draft is checked against open tasks and the other drafts; the warnings follow any edit to the times.
+  const existing=Object.values(s.records).filter(r=>r.kind==='task') as unknown as Task[];
+  const slots=drafts.map(d=>({id:d.key,title:d.title,due:d.due,time:d.time}));
+  const clashes=new Map(slots.map(slot=>[slot.id,clashWarning(scheduleClashes(slot,[...existing,...slots]),s.language)]));
+  const clashCount=[...clashes.values()].filter(Boolean).length;
   function saveAll(list:AssistantAction[]){
     const valid=list.filter(a=>a.title.trim());if(saved.current||!valid.length)return;saved.current=true;
     const now=Date.now(),records={...s.records};
@@ -57,7 +64,8 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
     {drafts.length>0&&<View style={{gap:12}}>
       <View style={[styles.row,{justifyContent:'space-between'}]}><Eyebrow>{t(`${drafts.length} TASK${drafts.length===1?'':'S'} READY`,`${drafts.length} مهام جاهزة`)}</Eyebrow><Pressable accessibilityRole="button" onPress={()=>{setDrafts([]);setReply('');setRestored(false);}}><Text style={{color:c.accent,fontWeight:'600'}}>{t('Start over','ابدأ من جديد')}</Text></Pressable></View>
       {!!reply&&<Label small>{reply}</Label>}
-      {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===(d.priority??2))??QUADRANTS[1]!,expanded=open===d.key;
+      {clashCount>0&&<Notice>{t(clashCount===1?'One of these clashes with your schedule. Check the warning below.':`${clashCount} of these clash with your schedule. Check the warnings below.`,clashCount===1?'واحدة من دول متعارضة مع مواعيدك. شوف التنبيه تحت.':`${clashCount} منهم متعارضين مع مواعيدك. شوف التنبيهات تحت.`)}</Notice>}
+      {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===(d.priority??2))??QUADRANTS[1]!,expanded=open===d.key,clash=clashes.get(d.key);
         return <View key={d.key} style={{backgroundColor:c.surface,borderRadius:18,borderWidth:1,borderColor:c.line,overflow:'hidden'}}>
           <View style={{height:4,backgroundColor:c.q[q.q]}}/>
           <View style={{padding:14,gap:10}}>
@@ -67,6 +75,7 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
             <View style={[styles.row,{gap:6}]}>
               {QUADRANTS.map(x=>{const on=x.q===q.q;return <Pressable key={x.q} accessibilityRole="button" accessibilityState={{selected:on}} accessibilityLabel={t(x.en,x.ar)} onPress={()=>edit(d.key,{priority:x.q})} style={{paddingHorizontal:10,paddingVertical:5,borderRadius:999,borderWidth:1,borderColor:on?c.q[x.q]:c.line,backgroundColor:on?c.q[x.q]:'transparent'}}><Text style={{fontSize:12,fontWeight:'700',color:on?'#fff':c.muted}}>{t(x.en,x.ar)}</Text></Pressable>;})}</View>
             <Pressable accessibilityRole="button" onPress={()=>setOpen(expanded?null:d.key)}><Text style={{fontSize:13,fontWeight:'600',color:d.due?c.accent:c.muted}}>{d.due?`📅 ${d.due}${d.time?` · ${d.time}`:''}`:t('+ Add a date','+ أضف موعداً')}</Text></Pressable>
+            {!!clash&&<Text accessibilityRole="alert" style={{fontSize:13,fontWeight:'600',color:c.q[1]}}>{clash}</Text>}
             {expanded&&<SchedulePicker due={d.due} time={d.time} onChange={(due,time)=>edit(d.key,{due,time})}/>}
           </View></View>;})}
       <Button icon="check" title={drafts.length===1?t('Save this task','حفظ هذه المهمة'):t(`Save all ${drafts.length} tasks`,`حفظ كل المهام (${drafts.length})`)} disabled={!drafts.some(d=>d.title.trim())} onPress={()=>saveAll(drafts)}/>
