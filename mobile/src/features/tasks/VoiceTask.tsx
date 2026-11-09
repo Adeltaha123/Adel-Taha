@@ -4,6 +4,7 @@ import {randomUUID} from 'expo-crypto';
 import type {AssistantAction} from '../../../../shared/assistant';
 import {proposedRecord} from '../../../../shared/assistant';
 import {clashWarning,scheduleClashes} from '../../../../shared/conflicts';
+import {boardQuadrant} from '../../../../shared/productivity';
 import type {Task} from '../../../../shared/domain';
 import {change,loadVoiceDraft,saveVoiceDraft,useStore} from '../../data/store';
 import {understandTasks,voiceStatus} from '../../services/assistant';
@@ -65,7 +66,7 @@ export function VoiceTask({close,initialText=''}:{close:()=>void;initialText?:st
       <View style={[styles.row,{justifyContent:'space-between'}]}><Eyebrow>{t(`${drafts.length} TASK${drafts.length===1?'':'S'} READY`,`${drafts.length} مهام جاهزة`)}</Eyebrow><Pressable accessibilityRole="button" onPress={()=>{setDrafts([]);setReply('');setRestored(false);}}><Text style={{color:c.accent,fontWeight:'600'}}>{t('Start over','ابدأ من جديد')}</Text></Pressable></View>
       {!!reply&&<Label small>{reply}</Label>}
       {clashCount>0&&<Notice>{t(clashCount===1?'One of these clashes with your schedule. Check the warning below.':`${clashCount} of these clash with your schedule. Check the warnings below.`,clashCount===1?'واحدة من دول متعارضة مع مواعيدك. شوف التنبيه تحت.':`${clashCount} منهم متعارضين مع مواعيدك. شوف التنبيهات تحت.`)}</Notice>}
-      {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===(d.priority??2))??QUADRANTS[1]!,expanded=open===d.key,clash=clashes.get(d.key);
+      {drafts.map(d=>{const q=QUADRANTS.find(x=>x.q===boardQuadrant({q:d.priority,due:d.due}))??QUADRANTS[1]!,expanded=open===d.key,clash=clashes.get(d.key);
         return <View key={d.key} style={{backgroundColor:c.surface,borderRadius:18,borderWidth:1,borderColor:c.line,overflow:'hidden'}}>
           <View style={{height:4,backgroundColor:c.q[q.q]}}/>
           <View style={{padding:14,gap:10}}>

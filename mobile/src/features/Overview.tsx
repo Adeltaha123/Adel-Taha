@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Share, View, Text, Pressable } from 'react-native';
 import type { Task } from '../../../shared/domain';
-import { dayKey, focusRemaining, taskSummary } from '../../../shared/productivity';
+import { boardQuadrant, dayKey, focusRemaining, taskSummary } from '../../../shared/productivity';
 import { setFocus, useStore, reportError } from '../data/store';
 import { Button, Card, Eyebrow, Icon, Label, styles, useText, useTheme } from '../app/ui';
 import { InstallCard } from './Install';
@@ -14,7 +14,7 @@ export function Overview({ onAssistant, onVoice }: { onAssistant:()=>void; onVoi
   const greeting = hour < 12 ? t('Good morning','صباح الخير') : hour < 18 ? t('Good afternoon','نهارك سعيد') : t('Good evening','مساء الخير');
   const progress = summary.total ? summary.completed/summary.total : 0;
   const stats = [[t('Open','مفتوحة'),summary.open],[t('Due today','اليوم'),summary.today],[t('Overdue','متأخرة'),summary.overdue],[t('Completed','منجزة'),summary.completed]] as const;
-  const next = tasks.filter(x => !x.done).sort((a,b) => a.q-b.q || (a.due || '9999').localeCompare(b.due || '9999')).slice(0,5);
+  const next = tasks.filter(x => !x.done).sort((a,b) => boardQuadrant(a)-boardQuadrant(b) || (a.due || '9999').localeCompare(b.due || '9999')).slice(0,5);
   const date = new Date().toLocaleDateString(state.language === 'ar' ? 'ar-EG' : 'en-GB',{ weekday:'long',day:'numeric',month:'long' });
   const quick = (icon:'mic'|'assistant',title:string,label:string,onPress:()=>void,primary:boolean) => <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ flex:1,gap:10,padding:16,borderRadius:20,backgroundColor:primary ? c.accent : c.surface,borderWidth:primary ? 0 : 1,borderColor:c.line,opacity:pressed ? 0.85 : 1 })}>
     <View style={{ width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center',backgroundColor:primary ? 'rgba(255,255,255,0.18)' : c.accentSoft }}><Icon name={icon} size={20} color={primary ? c.onAccent : c.accent} width={2}/></View>
@@ -33,7 +33,7 @@ export function Overview({ onAssistant, onVoice }: { onAssistant:()=>void; onVoi
       {state.focusEnd && remaining === 0 && <Label strong>{t('Session complete. Take a short break.','انتهت الجلسة. خذ استراحة قصيرة.')}</Label>}
       <Button secondary={!!state.focusEnd} title={state.focusEnd ? t('Reset timer','إعادة ضبط') : t('Start focus','ابدأ التركيز')} onPress={() => setFocus(state.focusEnd ? null : Date.now()+FOCUS*1000)}/></Card>
     <Card><Eyebrow>{t('NEXT PRIORITIES','الأولويات القادمة')}</Eyebrow>
-      {next.map(task => <View key={task.id} style={{ flexDirection:'row',alignItems:'center',gap:12 }}><View style={{ width:10,height:10,borderRadius:5,backgroundColor:c.q[task.q] }}/><View style={{ flex:1 }}><Label strong>{task.title}</Label>{!!task.due && <Label small>{task.due}{task.time ? ` · ${task.time}` : ''}</Label>}</View></View>)}
+      {next.map(task => <View key={task.id} style={{ flexDirection:'row',alignItems:'center',gap:12 }}><View style={{ width:10,height:10,borderRadius:5,backgroundColor:c.q[boardQuadrant(task)] }}/><View style={{ flex:1 }}><Label strong>{task.title}</Label>{!!task.due && <Label small>{task.due}{task.time ? ` · ${task.time}` : ''}</Label>}</View></View>)}
       {!summary.open && <Label>{t('Nothing pending. Tap the mic to add your next task.','لا توجد مهام معلقة. اضغط الميكروفون لإضافة مهمتك القادمة.')}</Label>}</Card>
     {!!state.members.length && <Card><Eyebrow>{t('TEAM WORKLOAD','مهام الفريق')}</Eyebrow>{state.members.map(m => <Label key={m.id}>{m.name}: {tasks.filter(x => !x.done && x.assigneeId === m.id).length} {t('open','مفتوحة')}</Label>)}</Card>}
     <Button title={t('Share progress report','مشاركة تقرير التقدم')} secondary onPress={() => void Share.share({ message:`My PA · ${dayKey()}\n${stats.map(([name,value]) => `${name}: ${value}`).join('\n')}` }).catch(reportError)}/>

@@ -390,3 +390,22 @@ test('tasks at the same time or within an hour of another get a clash warning, i
   await page.getByRole('button',{name:'Edit',exact:true}).filter({ hasText:'Call Ahmed' }).first().click();
   await expect(page.getByText('⚠️ 30 min from “Meeting with Hala” (10:30)',{exact:true})).toBeVisible();
 });
+test('on the board, today\'s tasks are in Do now and later days\' tasks in Schedule',async({page})=>{
+  test.setTimeout(120000);
+  const day=(offset:number)=>{const d=new Date();d.setDate(d.getDate()+offset);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+  await page.route('**/api/assistant/status',route=>route.fulfill({ json:{ configured:true,model:'gpt-6-luna' } }));
+  // Both proposed as urgent: the board still puts tomorrow's in Schedule until its day.
+  await page.route('**/api/assistant/chat',route=>route.fulfill({ json:{ reply:'I found 2 tasks.',actions:[
+    { type:'add_task',title:'Pay the electricity bill',due:day(0),time:null,targetId:null,priority:1 },
+    { type:'add_task',title:'Visit the bank',due:day(1),time:null,targetId:null,priority:1 }] } }));
+  await registerVoiceUser(page,'board');
+  await page.getByRole('button',{name:'Tasks',exact:true}).click();
+  await page.getByLabel('Quick add a task',{exact:true}).fill('pay the electricity bill today and visit the bank tomorrow');
+  await page.getByRole('button',{name:'Add',exact:true}).click();
+  await page.getByRole('button',{name:'Save all 2 tasks',exact:true}).click();
+  const box=(name:string,hint:string)=>page.locator('div').filter({ has:page.getByText(name,{exact:true}) }).filter({ has:page.getByText(hint,{exact:true}) }).last();
+  await expect(box('Do now','Urgent + important').getByText('Pay the electricity bill',{exact:true})).toBeVisible();
+  await expect(box('Schedule','Important, not urgent').getByText('Visit the bank',{exact:true})).toBeVisible();
+  await expect(box('Do now','Urgent + important').getByText('Visit the bank',{exact:true})).toHaveCount(0);
+  await page.screenshot({ path:'mobile/.expo/preview-board-dates.png' });
+});

@@ -2,7 +2,7 @@ import { useEffect,useRef,useState } from 'react';
 import { AppState, Pressable, Text, View } from 'react-native';
 import type { Task } from '../../../shared/domain';
 import { checkInTime, scheduleKey, moveToTomorrow } from '../../../shared/checkins';
-import { dayKey } from '../../../shared/productivity';
+import { boardQuadrant, dayKey } from '../../../shared/productivity';
 import { put,useStore } from '../data/store';
 import { enableReminders,onCheckInResponse,scheduleCheckIns,type CheckInAction,type CheckInResponse } from '../platform/notifications';
 import { Button,Icon,Label,useText,useTheme } from '../app/ui';
@@ -48,7 +48,7 @@ export function CheckIns() {
     <Text style={{fontSize:13,fontWeight:'700',color:primary?c.onAccent:c.ink}}>{label}</Text></Pressable>;
   return <View style={{paddingHorizontal:20,paddingBottom:6}}>
     <View accessibilityRole="summary" style={{flexDirection:'row',gap:10,backgroundColor:c.surface,borderWidth:1,borderColor:overdue?c.q[1]:c.line,borderRadius:16,padding:10}}>
-      <View style={{width:4,borderRadius:2,backgroundColor:c.q[due.q||2]}}/>
+      <View style={{width:4,borderRadius:2,backgroundColor:c.q[boardQuadrant(due,today)]}}/>
       <View style={{flex:1,gap:8}}>
         <View style={{flexDirection:'row',alignItems:'flex-start',gap:8}}>
           <View style={{flex:1}}>

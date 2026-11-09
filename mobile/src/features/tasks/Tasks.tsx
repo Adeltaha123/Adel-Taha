@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal, ScrollView, View, Pressable, Text, TextInput } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { Task } from '../../../../shared/domain';
-import { validDay, dayKey } from '../../../../shared/productivity';
+import { validDay, dayKey, boardQuadrant } from '../../../../shared/productivity';
 import { clashWarning, scheduleClashes } from '../../../../shared/conflicts';
 import { put, remove, useStore } from '../../data/store';
 import { Button, Chip, Field, Icon, IconButton, Label, Notice, Page, styles, useText, useTheme } from '../../app/ui';
@@ -14,7 +14,7 @@ const PREVIEW = 6;
 const isArabic = (s:string) => /[؀-ۿ]/.test(s);
 const addDays = (key:string,n:number) => { const [y,m,d] = key.split('-').map(Number); return dayKey(new Date(y!,m!-1,d!+n)); };
 const asDate = (key:string) => { const [y,m,d] = key.split('-').map(Number); return new Date(y!,m!-1,d!); };
-const byPriority = (a:Task,b:Task) => Number(a.done)-Number(b.done) || (a.q||2)-(b.q||2) || (a.due||'9999').localeCompare(b.due||'9999') || (a.time||'99').localeCompare(b.time||'99') || (a.created||0)-(b.created||0);
+const byPriority = (a:Task,b:Task) => Number(a.done)-Number(b.done) || boardQuadrant(a)-boardQuadrant(b) || (a.due||'9999').localeCompare(b.due||'9999') || (a.time||'99').localeCompare(b.time||'99') || (a.created||0)-(b.created||0);
 
 /* Task board modelled on the web app: day strip, Eisenhower matrix, and a plain list. */
 export function Tasks({ onVoice, onAnalyze }: { onVoice:()=>void; onAnalyze:(text:string)=>void }) {
@@ -50,11 +50,11 @@ export function Tasks({ onVoice, onAnalyze }: { onVoice:()=>void; onAnalyze:(tex
         borderColor:on ? c.accent : opts.isToday ? c.gold : c.line,backgroundColor:on ? c.accent : c.surface }}>
       {opts.wide ? <><Text style={{ fontSize:20,fontWeight:'800',color:on ? c.onAccent : opts.tone ?? c.ink }}>{top}</Text><Text style={{ fontSize:12,color:on ? c.onAccent : c.muted }}>{bottom}</Text></>
         : <><Text style={{ fontSize:12,color:on ? c.onAccent : c.muted }}>{bottom}</Text><Text style={{ fontSize:19,fontWeight:'700',color:on ? c.onAccent : c.ink }}>{top}</Text>
-          <View style={{ flexDirection:'row',gap:3,height:6 }}>{(opts.dots ?? []).slice(0,4).map(x => <View key={x.id} style={{ width:6,height:6,borderRadius:3,backgroundColor:on ? c.onAccent : c.q[x.q] }}/>)}</View></>}
+          <View style={{ flexDirection:'row',gap:3,height:6 }}>{(opts.dots ?? []).slice(0,4).map(x => <View key={x.id} style={{ width:6,height:6,borderRadius:3,backgroundColor:on ? c.onAccent : c.q[boardQuadrant(x,today)] }}/>)}</View></>}
     </Pressable>; };
 
   const quadrant = (q:typeof QUADRANTS[number]) => {
-    const items = shown.filter(x => (x.q||2) === q.q), visible = expanded[q.q] ? items : items.slice(0,PREVIEW), count = items.filter(x => !x.done).length;
+    const items = shown.filter(x => boardQuadrant(x,today) === q.q), visible = expanded[q.q] ? items : items.slice(0,PREVIEW), count = items.filter(x => !x.done).length;
     return <View key={q.q} style={{ width:'48.5%',backgroundColor:c.surface,borderRadius:18,borderWidth:1,borderColor:c.line,borderTopWidth:5,borderTopColor:c.q[q.q],padding:12,gap:10,marginBottom:12 }}>
       <View style={{ flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6 }}><Text style={{ fontSize:16,fontWeight:'800',color:c.ink,flexShrink:1 }}>{t(q.en,q.ar)}</Text>
         <View style={{ minWidth:28,height:28,borderRadius:14,paddingHorizontal:7,backgroundColor:c.sunk,alignItems:'center',justifyContent:'center' }}><Text style={{ fontSize:13,fontWeight:'700',color:c.muted }}>{count}</Text></View></View>
@@ -91,7 +91,7 @@ export function Tasks({ onVoice, onAnalyze }: { onVoice:()=>void; onAnalyze:(tex
       {day !== 'all' && <View style={[styles.row,{ justifyContent:'space-between' }]}><Text style={{ fontSize:18,fontWeight:'800',color:c.ink }}>{day === 'late' ? t('Overdue','متأخرة') : day === 'nodate' ? t('No date','بدون موعد') : day === 'mine' ? t('Assigned to me','المسندة لي') : asDate(day).toLocaleDateString(locale,{ weekday:'long',day:'numeric',month:'long' })}</Text>
         <Pressable accessibilityRole="button" onPress={() => setDay('all')}><Text style={{ color:c.accent,fontWeight:'700' }}>{t('All tasks','كل المهام')}</Text></Pressable></View>}
       {mode === 'matrix' ? <View style={{ flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between' }}>{QUADRANTS.map(quadrant)}</View>
-        : shown.length ? <View style={{ gap:10 }}>{shown.slice(0,200).map(x => <View key={x.id} style={{ flexDirection:'row',alignItems:'flex-start',gap:12,backgroundColor:c.surface,borderWidth:1,borderColor:c.line,borderRadius:16,padding:14,borderStartWidth:5,borderStartColor:c.q[x.q] }}>{check(x,24)}
+        : shown.length ? <View style={{ gap:10 }}>{shown.slice(0,200).map(x => <View key={x.id} style={{ flexDirection:'row',alignItems:'flex-start',gap:12,backgroundColor:c.surface,borderWidth:1,borderColor:c.line,borderRadius:16,padding:14,borderStartWidth:5,borderStartColor:c.q[boardQuadrant(x,today)] }}>{check(x,24)}
             <Pressable accessibilityRole="button" accessibilityLabel={t('Edit','تعديل')} onPress={() => setEditing(x)} style={{ flex:1,gap:4 }}>{titleText(x,16)}{sub(x)}
               {(!!x.items?.length || !!x.delegate) && <Text style={{ fontSize:12,color:c.muted }}>{x.items?.length ? `☑ ${x.items.filter(i => i.done).length}/${x.items.length}  ` : ''}{x.delegate ? `→ ${x.delegate}` : ''}</Text>}</Pressable></View>)}</View>
         : <View style={{ alignItems:'center',padding:30,gap:8 }}><Icon name="tasks" size={34} color={c.faint}/><Label>{t('Nothing here. Add a task or tap the mic.','لا شيء هنا. أضف مهمة أو اضغط الميكروفون.')}</Label></View>}
@@ -117,7 +117,8 @@ function TaskEditor({ task,close }: { task:Task; close:()=>void }) {
     {!!clash && <Notice tone="error">{clash}</Notice>}
     {!!draft.due && <ReminderPermission/>}
     <Label>{t('Priority','الأولوية')}</Label>
-    <View style={styles.row}>{QUADRANTS.map(x => <Chip key={x.q} title={t(x.en,x.ar)} active={draft.q === x.q} onPress={() => setDraft({ ...draft,q:x.q })}/>)}</View>
+    <View style={styles.row}>{QUADRANTS.map(x => <Chip key={x.q} title={t(x.en,x.ar)} active={boardQuadrant(draft) === x.q} onPress={() => setDraft({ ...draft,q:x.q })}/>)}</View>
+    {!!draft.due && boardQuadrant(draft) <= 2 && <Label small>{t('With a date, the task stays in Schedule until its day, then moves to Do now by itself.','لما يكون ليها تاريخ، المهمة بتفضل في «جدولها» لحد يومها، وبعدين تنتقل لـ«افعلها الآن» لوحدها.')}</Label>}
     {!!state.members.length && <><Label>{t('Assign to','إسناد إلى')}</Label><View style={styles.row}><Button title={t('Unassigned','بدون إسناد')} secondary onPress={() => setDraft({ ...draft,assigneeId:undefined,delegate:null })}/>{state.members.map(m => <Button key={m.id} title={(draft.assigneeId === m.id ? '✓ ' : '')+m.name} secondary onPress={() => setDraft({ ...draft,assigneeId:m.id,delegate:m.name })}/>)}</View></>}
     <Label>{t('Checklist','قائمة الخطوات')}</Label>{draft.items.map((item,index) => <Button key={index} secondary title={`${item.done ? '✓' : '○'} ${item.t}`} onPress={() => setDraft({ ...draft,items:draft.items.map((v,i) => i === index ? { ...v,done:!v.done } : v) })}/>)}
     <Field label={t('New step','خطوة جديدة')} value={step} onChangeText={setStep} maxLength={5000}/><Button title={t('Add step','إضافة خطوة')} disabled={!step.trim() || draft.items.length >= 500} secondary onPress={() => { setDraft({ ...draft,items:[...draft.items,{ t:step.trim(),done:false }] }); setStep(''); }}/>
